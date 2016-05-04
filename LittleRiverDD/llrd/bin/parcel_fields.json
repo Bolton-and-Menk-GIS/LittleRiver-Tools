@@ -1,0 +1,112 @@
+{
+    "fields": [
+        {
+            "alias": "OWNER", 
+            "length": 255, 
+            "type": "String", 
+            "name": "OWNER"
+        }, 
+        {
+            "alias": "PARCEL ID", 
+            "length": 50, 
+            "type": "String", 
+            "name": "PARCEL_ID"
+        }, 
+        {
+            "alias": "ACRES", 
+            "length": 8, 
+            "type": "Double", 
+            "name": "ACRES"
+        }, 
+        {
+            "alias": "ADDRESS", 
+            "length": 150, 
+            "type": "String", 
+            "name": "ADDRESS1"
+        }, 
+        {
+            "alias": "CITY, STATE ZIP", 
+            "length": 150, 
+            "type": "String", 
+            "name": "ADDRESS2"
+        }, 
+        {
+            "alias": "DEED BOOK", 
+            "length": 10, 
+            "type": "String", 
+            "name": "DEED_BOOK"
+        }, 
+        {
+            "alias": "DEED PAGE", 
+            "length": 10, 
+            "type": "String", 
+            "name": "DEED_PAGE"
+        }, 
+        {
+            "alias": "DEED DATE", 
+            "length": 8, 
+            "type": "Date", 
+            "name": "DEED_DATE"
+        }, 
+        {
+            "alias": "LEGAL DESCRIPTION 1", 
+            "length": 250, 
+            "type": "String", 
+            "name": "LEG_DESC1"
+        }, 
+        {
+            "alias": "LEGAL DESCRIPTION 2", 
+            "length": 250, 
+            "type": "String", 
+            "name": "LEG_DESC2"
+        }, 
+        {
+            "alias": "SECTION", 
+            "length": 10, 
+            "type": "String", 
+            "name": "SECTION"
+        }, 
+        {
+            "alias": "TOWNSHIP", 
+            "length": 10, 
+            "type": "String", 
+            "name": "TOWNSHIP"
+        }, 
+        {
+            "alias": "RANGE", 
+            "length": 10, 
+            "type": "String", 
+            "name": "RANGE"
+        }, 
+        {
+            "alias": "CITY", 
+            "length": 50, 
+            "type": "String", 
+            "name": "CITY"
+        }, 
+        {
+            "alias": "STATE", 
+            "length": 25, 
+            "type": "String", 
+            "name": "STATE"
+        }, 
+        {
+            "alias": "ZIP", 
+            "length": 12, 
+            "type": "String", 
+            "name": "ZIP"
+        },
+		{
+		    "alias": "PIN", 
+		    "length": 50, 
+		    "name": "PIN", 
+		    "type": "String"
+		},
+		{
+		  "alias": "SEC-TWN-RNG", 
+		  "length": 50, 
+		  "name": "SEC_TWN_RNG", 
+		  "type": "String"
+		}
+    ]
+}

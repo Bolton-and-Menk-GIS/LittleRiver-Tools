@@ -1,0 +1,52 @@
+{
+  "fields": [
+    {
+      "alias": "GIS ACRES", 
+      "length": 8, 
+      "name": "GIS_ACRES", 
+      "type": "Double"
+    }, 
+    {
+      "alias": "OWNER CODE", 
+      "length": 50, 
+      "name": "OWNER_CODE", 
+      "type": "String"
+    }, 
+    {
+      "alias": "TOTAL ASSESSMENT", 
+      "length": 8, 
+      "name": "TOT_ASSESSMENT", 
+      "type": "Double"
+    }, 
+    {
+      "alias": "DATE PAID", 
+      "length": 8, 
+      "name": "DATE_PAID", 
+      "type": "Date"
+    }, 
+    {
+      "alias": "TOTAL BENEFIT", 
+      "length": 8, 
+      "name": "TOT_BENEFIT", 
+      "type": "Double"
+    }, 
+    {
+      "alias": "TOTAL ADMIN FEE", 
+      "length": 8, 
+      "name": "TOT_ADMIN_FEE", 
+      "type": "Double"
+    }, 
+    {
+      "alias": "PIN", 
+      "length": 50, 
+      "name": "PIN", 
+      "type": "String"
+    },
+	{
+      "alias": "SEC-TWN-RNG", 
+      "length": 50, 
+      "name": "SEC_TWN_RNG", 
+      "type": "String"
+    }
+  ]
+}
