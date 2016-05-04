@@ -50,7 +50,7 @@ COUNTY_GIS = 'COUNTY'
 DEFAULT_SORT = ';'.join([CODE_GIS, DESCRIPTION_GIS])
 ADMINISTRATIVE_FEE = 'ADMINISTRATIVE FEE'
 
-@utils.timeit
+##@utils.timeit
 def generateMAL(out_excel, county, rate=9.0, year=2015, where_clause='', sort_by=DEFAULT_SORT):
     """Generates the Maintenance Assessment List for a county as an excel file.
 

@@ -203,13 +203,12 @@ def ErrorLog(e, f, fargs=[]):
     """generate an error log when tool fails"""
 
     # Get the traceback object
-    date = time.strftime('%m_%d_%Y')
+    date = time.strftime('%m_%d_%Y_%H%M%S')
     cur = os.path.basename(sys.argv[0]).split('.')[0]
     er_time = '\n\n{0} failed at:\t{1}\n\n'.format(cur, datetime.datetime.now())
     log_dir = os.path.join(os.path.dirname(SOURCE_DIR), 'logs', 'errors')
 
-
-    txt = os.path.join(log_dir, 'ERROR_{0}_{1}.txt'.format(cur, date))
+    txt = assignUniqueName(os.path.join(log_dir, 'ERROR_{0}_{1}.txt'.format(cur, date)))
     if os.path.exists(txt):
         try:
             os.remove(txt)
@@ -225,9 +224,7 @@ def ErrorLog(e, f, fargs=[]):
     del logger
 
     # raise full message
-    with open(txt, 'rt') as fl:
-        body = fl.read()
-    raise Exception(body)
+    raise Exception(e)
 
 def toolLog(f, test=False):
     """Adds log of tool usage [tool, user, date, time, am-pm]"""
@@ -284,6 +281,12 @@ def passArgs(function, argv=[]):
     if not argv:
         argv = fixGpArgs()
 
+    if hasattr(function, 'im_class'):
+            fname = '.'.join([function.im_class.__name__, function.__name__])
+    else:
+        fname = function.__name__
+
+    st = datetime.datetime.now()
     try:
         if isinstance(argv, dict):
             f = function(**argv)
@@ -292,6 +295,8 @@ def passArgs(function, argv=[]):
     except Exception as e:
        ErrorLog(e, function, argv)
 
+    Message('"{0}" from {1} Complete - Elapsed time: {2}'.format(fname, sys.modules[function.__module__],
+                                                            str(datetime.datetime.now()-st)[:-4]))
 ##    if f:
 ##        Message('{}.{}() Result:\n{}\ntype: {}'.format(function.__module__, function.__name__, f, type(f)))
     return f
@@ -542,6 +547,41 @@ def getPIN(in_pid):
         return ''
     return in_pid.replace('.', '').replace('-','').replace(' ','')
 
+def GetCentroids(in_fc, output, point_location='INSIDE'):
+    """generates centroids for features.  Use this in case no ArcInfo license
+
+    Required:
+        in_fc -- input features
+        output -- output points
+        point_location -- option for centroid.  Defalt is INSIDE
+    """
+
+    # create fc
+    path, name = os.path.split(output)
+    sm = 'SAME_AS_TEMPLATE'
+    arcpy.CreateFeatureclass_management(path, name, 'POINT',
+                                        in_fc, sm, sm, in_fc)
+
+    # loop thru geom
+    fields = [f.name for f in arcpy.ListFields(in_fc)
+              if f.type not in ('OID', 'Geometry')
+              and 'shape' not in f.name.lower()]
+
+    # centroid type
+    shp_fld = 'SHAPE@TRUECENTROID'
+    if point_location == 'INSIDE':
+        shp_fld = 'SHAPE@XY'
+    fields.insert(0, shp_fld)
+
+    # insert rows
+    with InsertCursor(output, fields) as irows:
+        with arcpy.da.SearchCursor(in_fc, fields) as rows:
+            for r in rows:
+                irows.insertRow(r)
+
+    Message('Created: "{0}"'.format(output))
+    return output
+
 class Geodatabase(object):
     """Wrapper for Little River District Geodatabase
 
@@ -720,13 +760,19 @@ class Geodatabase(object):
         arcpy.management.DeleteRows(pars)
         arcpy.management.Append(parcels, pars, 'NO_TEST', fmap)
 
+        # get centroids
+        pars_pts = r'in_memory\pars_pnts'
+        #pars_pts = os.path.join(self.path, 'pars_pnts') #testing
+        GetCentroids(pars, pars_pts)
+
         # validate Section Township Range and calc acres
         plss = pars.replace('_Parcels', '_PLSS')
         spa_join = r'in_memory\tmp_spa_join'
+        #spa_join = os.path.join(self.path, 'spa_join') #testing
 
         # spatial join
-        arcpy.analysis.SpatialJoin(pars, plss, spa_join)
-        with arcpy.da.SearchCursor(spa_join, ['TARGET_FID', 'TWN', 'SEC', 'RNG']) as rows:
+        arcpy.analysis.SpatialJoin(pars_pts, plss, spa_join)
+        with arcpy.da.SearchCursor(spa_join, [PARCEL_ID, 'SEC', 'TWN', 'RNG']) as rows:
             for r in rows:
                 secs = {r[0]: r[1:] for r in rows}
 
@@ -738,13 +784,21 @@ class Geodatabase(object):
         if SEC_TWN_RNG not in existing_fields:
             arcpy.management.AddField(pars, SEC_TWN_RNG, 'TEXT', field_alias='SEC-TWN-RNG')
 
-        with UpdateCursor(pars, ['OID@', 'TOWNSHIP', 'SECTION', 'RANGE', PARCEL_ID, PIN, SEC_TWN_RNG]) as rows:
+        # update parcels and grap sec-twn-rng
+        sec_dict = {}
+        with UpdateCursor(pars, ['OID@', 'SECTION', 'TOWNSHIP', 'RANGE', PARCEL_ID, PIN, SEC_TWN_RNG]) as rows:
             for r in rows:
-                if r[0] in secs:
-                    r[1:4] = ['{:0>2}'.format(p) if p else '99' for p in secs[r[0]] ]
-                    r[5] = r[4].replace('.','').replace('-','').strip()
+                if r[4] in secs: #This was using OID first (r[0])
+                    r[1:4] = ['{:0>2}'.format(p) if p else '99' for p in secs[r[4]] ]
+
                     r[6] = '-'.join(r[1:4])
-                    rows.updateRow(r)
+
+                thePin = getPIN(r[4])
+                r[5] = thePin
+                rows.updateRow(r)
+
+                if r[6]:
+                    sec_dict[thePin] = [r[1], r[2], r[3], r[6]]
 
         # now do LR parcels
         lr_pars = pars + 'LR'
@@ -778,6 +832,20 @@ class Geodatabase(object):
                     r[2:-1] = sumd[r[-1]]
 
                 rows.updateRow(r)
+
+        # update Section-Township-Range only in summary table
+        if not SEC_TWN_RNG in [f.name for f in arcpy.ListFields(self.summary_table)]:
+            arcpy.management.AddField(self.summary_table, SEC_TWN_RNG, 'TEXT', field_alias='SEC-TWN-RNG')
+
+        with UpdateCursor(self.summary_table, [PIN, 'SECTION', 'TOWNSHIP', 'RANGE', SEC_TWN_RNG]) as rows:
+            for r in rows:
+                if r[0] in sec_dict:
+                    vals = sec_dict[r[0]]
+                    for i,v in enumerate(vals):
+                        if v:
+                            r[i+1] = v
+
+                    rows.updateRow(r)
 
         Message('Successfully updated parcels for: "{}"'.format(county))
         return lr_pars
@@ -953,6 +1021,23 @@ class Geodatabase(object):
                     owners[r[-1]]['assessments'].append(ad)
 
         return munch.munchify(owners)
+
+    def validatePINs(self, table):
+        """will validate the PIN fields for a given table"""
+        if table == self.breakdown_table:
+            par_id_field = 'COUNTY_MAP_NUMBER'
+        else:
+            par_id_field = PARCEL_ID
+
+        if not PIN in [f.name for f in arcpy.ListFields(table)]:
+            arcpy.management.AddField(table, PIN, 'TEXT')
+
+        # update rows
+        with UpdateCursor(table, [par_id_field, PIN]) as rows:
+            for r in rows:
+                r[1] = getPIN(r[0])
+                rows.updateRow(r)
+        return
 
 
 class Owner(object):

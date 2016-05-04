@@ -571,8 +571,8 @@ class CreateFlagTable(object):
     def execute(self, parameters, messages):
         """The source code of the tool."""
         args = [p.valueAsText for p in parameters]
-##        utils.passArgs(flags.getFlags, args)
-        flags.getFlags(*args)
+        utils.passArgs(flags.getFlags, args)
+##        flags.getFlags(*args)
 
 class DownloadParcels(object):
     def __init__(self):

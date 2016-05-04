@@ -46,7 +46,7 @@ SEQUENCE_FC = 'SEQUENCE'
 COUNTY_FC = 'COUNTY'
 
 
-@utils.timeit
+##@utils.timeit
 def generateAOR(out_excel, county, where_clause=None, sort_by=utils.OWNER_CODE):
     """generate Abstract of Receipts report in excel format
 

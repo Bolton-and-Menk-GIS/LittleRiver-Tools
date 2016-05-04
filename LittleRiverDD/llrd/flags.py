@@ -23,10 +23,11 @@ FLAG_FIELDS = [('PIN', 'PIN', 'TEXT'),
                ('BENEFIT_FLAG', 'BENEFIT FLAG', 'FLOAT'),
                ('ASSESSEMENT_FLAG', 'ASSESSMENT FLAG', 'FLOAT'),
                ('PLSS_FLAG', 'PLSS FLAG', 'TEXT'),
+               ('COUNTY', 'COUNTY', 'TEXT'),
                ('COMMENTS', 'COMMENTS', 'TEXT')
             ]
 
-@utils.timeit
+##@utils.timeit
 def getFlags(acre_threshold=10, min_acre_diff=40):
     """generates flags for *bad* records
 
@@ -42,7 +43,7 @@ def getFlags(acre_threshold=10, min_acre_diff=40):
         raise ValueError('Acre threshold must be between 1-100!')
 
     if acre_threshold > 1:
-        acre_threshold * .01
+        acre_threshold *= .01
 
     # run summary stats on breakdown table
     gdb = utils.Geodatabase()
@@ -75,7 +76,7 @@ def getFlags(acre_threshold=10, min_acre_diff=40):
 
     # read summary table from gdb
     summary_fields =  ['PIN', 'OWNER_CODE', 'OWNER', 'ASSESSED_ACRES', 'TOT_BENEFIT',
-                       'TOT_ASSESSMENT', 'SECTION', 'TOWNSHIP', 'RANGE']
+                       'TOT_ASSESSMENT', 'SECTION', 'TOWNSHIP', 'RANGE', 'COUNTY']
 
     # generate flags
     flagCount = 0
@@ -85,8 +86,9 @@ def getFlags(acre_threshold=10, min_acre_diff=40):
         with arcpy.da.SearchCursor(gdb.summary_table, summary_fields) as rows:
             for r in rows:
                 newRow = [None] * len(FLAG_FIELDS[:-1])
+                par = None
                 if r[0] in sum_d:
-                    plss = '-'.join(['{:0>2}'.format(p) if p else '99' for p in r[6:]])
+                    plss = '-'.join(['{:0>2}'.format(p) if p else '99' for p in r[6:9]])
                     par = sum_d[r[0]]
                     newRow[0] = r[0]
 
@@ -131,13 +133,33 @@ def getFlags(acre_threshold=10, min_acre_diff=40):
                     newRow[:2] = [r[0], pin_error_msg]
 
                 if len(filter(None, newRow)) >= 2:
+                    # add county
+                    newRow[9] = r[-1]
                     irows.insertRow(newRow)
                     flagCount += 1
 
                     if newRow[1] != pin_error_msg:
                         flag_pins.append(newRow[0])
 
-##    # set up relationship classes, this is causing things to break unexpectedly, will just have to go with table joins :(
+    # flag PINs in breakdown table, PINs keep getting set to NULL from relationship table??
+    with utils.UpdateCursor(gdb.breakdown_table, [utils.PIN, 'FLAG']) as urows:
+        for row in urows:
+            if row[0] in flag_pins:
+                row[1] = 'Y'
+            else:
+                row[1] = 'N'
+            urows.updateRow(row)
+
+    # flag PINs in summary table
+    with utils.UpdateCursor(gdb.summary_table, [utils.PIN, 'FLAG']) as rows:
+        for row in urows:
+            if row[0] in flag_pins:
+                row[1] = 'Y'
+            else:
+                row[1] = 'N'
+            rows.updateRow(row)
+
+##    # set up relationship classes, this is killing GDB performance, will just have to go with table joins :(
 ##    sum_rel = os.path.join(gdb.path, 'Summary_Relationship')
 ##    brk_rel = os.path.join(gdb.path, 'Breakdown_Relationship')
 ##    if not arcpy.Exists(sum_rel):
@@ -147,26 +169,6 @@ def getFlags(acre_threshold=10, min_acre_diff=40):
 ##    if not arcpy.Exists(brk_rel):
 ##        arcpy.management.CreateRelationshipClass(gdb.flag_table, gdb.breakdown_table, brk_rel, 'SIMPLE', 'Breakdown', 'Flags', 'BOTH', 'ONE_TO_MANY', 'NONE', 'PIN', 'PIN')
 ##        utils.Message('created ' + os.path.basename(brk_rel))
-
-    # flag PINs in breakdown table, PINs keep getting set to NULL from relationship table??
-    with utils.UpdateCursor(gdb.breakdown_table, ['PIN', 'FLAG', 'COUNTY_MAP_NUMBER']) as urows:
-        for row in urows:
-            if not r[0]:
-                row[0] = utils.getPIN(r[2])
-            if row[0] in flag_pins:
-                row[1] = 'Y'
-            else:
-                row[1] = 'N'
-            urows.updateRow(row)
-
-    # flag PINs in summary table
-    with utils.UpdateCursor(gdb.summary_table, ['PIN', 'FLAG']) as urows:
-        for row in urows:
-            if row[0] in flag_pins:
-                row[1] = 'Y'
-            else:
-                row[1] = 'N'
-            urows.updateRow(row)
 
     # compact gdb
     arcpy.management.Compact(gdb.path)

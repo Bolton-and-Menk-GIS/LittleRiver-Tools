@@ -282,7 +282,7 @@ def getMXDPath():
 
     return mapDoc
 
-@utils.timeit
+##@utils.timeit
 def generateOwnerReceiptsForCounty(out_folder, county, year=utils.LAST_YEAR, where_clause='', mail_to_name=DEFAULT_MAIL_NAME,
                                 mail_to_addr=DEFAULT_MAIL_ADDR, mail_to_csz=DEFAULT_MAIL_CSZ, add_map_reports=False):
     """ Generates owner receipts for the entire county
@@ -327,7 +327,7 @@ def generateOwnerReceiptsForCounty(out_folder, county, year=utils.LAST_YEAR, whe
     del mxd
     return
 
-@utils.timeit
+##@utils.timeit
 def generateOwnerReceiptByCode(out_folder, code, year=utils.LAST_YEAR, where_clause='', mail_to_name=DEFAULT_MAIL_NAME,
                                 mail_to_addr=DEFAULT_MAIL_ADDR, mail_to_csz=DEFAULT_MAIL_CSZ, add_map_reports=False):
     """
