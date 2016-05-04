@@ -64,7 +64,6 @@ class SetupConfigFile(object):
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        alla_rackball
         d = {p.name: p.valueAsText for p in parameters}
         utils.passArgs(utils.writeConfig, d)
 
