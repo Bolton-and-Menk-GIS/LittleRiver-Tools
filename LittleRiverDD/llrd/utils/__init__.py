@@ -239,6 +239,8 @@ def toolLog(f, test=False):
 
     # Append to appropriate text file
     path = os.path.join(os.path.dirname(SOURCE_DIR), 'logs', 'logs')
+    if not os.path.exists(path):
+        os.makedirs(path)
 
     # New text file for every month
     txt = os.path.join(path, time.strftime('%Y_%m_%b.txt'))
