@@ -1,5 +1,6 @@
 import arcpy
 import os
+import datetime
 from . import utils
 from . import AbstractOfReceipts
 from . import MaintenanceAssessmentList
@@ -7,14 +8,15 @@ from . import proxy
 from . import OwnerReceipt
 from . import flags
 from . import download
+from . import contours
+reload(utils)
 reload(OwnerReceipt)
 reload(AbstractOfReceipts)
 reload(MaintenanceAssessmentList)
 reload(proxy)
-reload(utils)
 reload(flags)
 reload(download)
-import datetime
+reload(contours)
 
 class Toolbox(object):
     def __init__(self):
@@ -25,7 +27,8 @@ class Toolbox(object):
 
         # List of tool classes associated with this toolbox
         self.tools = [SetupConfigFile, AbstractOfReceiptsTool, MaintenanceAssessmentListTool, ProxyTool,
-                      OwnerReceiptsCodeTool, OwnerReceiptsCountyTool, CreateFlagTable, DownloadParcels]
+                      OwnerReceiptsCodeTool, OwnerReceiptsCountyTool, CreateFlagTable, DownloadParcels,
+                      GenerateContoursTool]
 
 
 class SetupConfigFile(object):
@@ -605,3 +608,79 @@ class DownloadParcels(object):
     def execute(self, parameters, messages):
         """The source code of the tool."""
         utils.passArgs(download.parcelDownload, [])
+
+class GenerateContoursTool(object):
+    def __init__(self):
+        """Define the tool (tool name is the name of the class)."""
+        self.label = "Generate Contours"
+        self.description = "Generates clean contours, especially in areas with low relief"
+        self.category = 'Elevation'
+        self.canRunInBackground = False
+
+    def getParameterInfo(self):
+        """Define parameter definitions"""
+        dem = arcpy.Parameter(displayName="DEM",
+            name="dem",
+            datatype="Raster Layer",
+            parameterType="Required",
+            direction="Input")
+
+        out_contours = arcpy.Parameter(displayName="Output Contours",
+            name="out_contours",
+            datatype="Feature Class",
+            parameterType="Required",
+            direction="Output")
+
+        interval = arcpy.Parameter(displayName="Contour Interval",
+            name="interval",
+            datatype="Long",
+            parameterType="Optional",
+            direction="Input")
+
+        z_factor = arcpy.Parameter(displayName="Z-Factor",
+            name="z_factor",
+            datatype="Double",
+            parameterType="Optional",
+            direction="Input")
+
+        index_interval = arcpy.Parameter(displayName="Contour Index Interval",
+            name="index_interval",
+            datatype="Long",
+            parameterType="Optional",
+            direction="Input")
+
+        return [dem, out_contours, interval, z_factor, index_interval]
+
+    def isLicensed(self):
+        """Set whether tool is licensed to execute."""
+        return True
+
+    def updateParameters(self, parameters):
+        """Modify the values and properties of parameters before internal
+        validation is performed.  This method is called whenever a parameter
+        has been changed."""
+        parameters[2].filter.type = 'Range'
+        parameters[2].filter.list = [1, 10]
+
+        if not parameters[2].value and not parameters[2].altered:
+            parameters[2].value = 2
+
+        if not parameters[3].value and not parameters[3].altered:
+                parameters[3].value = 3.28084
+
+        parameters[4].filter.list = range(5, 105, 5)
+        if not parameters[4].value and not parameters[4].altered:
+            parameters[4].value = 10
+
+        return
+
+    def updateMessages(self, parameters):
+        """Modify the messages created by internal validation for each tool
+        parameter.  This method is called after internal validation."""
+        return
+
+    def execute(self, parameters, messages):
+        """The source code of the tool."""
+        arcpy.env.addOutputsToMap = True
+        args = [p.valueAsText for p in parameters]
+        utils.passArgs(contours.getContours, args)
