@@ -649,7 +649,13 @@ class GenerateContoursTool(object):
             parameterType="Optional",
             direction="Input")
 
-        return [dem, out_contours, interval, z_factor, index_interval]
+        contour_length_threshold = arcpy.Parameter(displayName="Contour Length Threshold",
+            name="contour_length_threshold",
+            datatype="Long",
+            parameterType="Optional",
+            direction="Input")
+
+        return [dem, out_contours, interval, z_factor, index_interval, contour_length_threshold]
 
     def isLicensed(self):
         """Set whether tool is licensed to execute."""
@@ -666,11 +672,14 @@ class GenerateContoursTool(object):
             parameters[2].value = 2
 
         if not parameters[3].value and not parameters[3].altered:
-                parameters[3].value = 3.28084
+            parameters[3].value = 3.28084
 
         parameters[4].filter.list = range(5, 105, 5)
         if not parameters[4].value and not parameters[4].altered:
             parameters[4].value = 10
+
+        if not parameters[5].value and not parameters[5].altered:
+            parameters[5].value = 200
 
         return
 

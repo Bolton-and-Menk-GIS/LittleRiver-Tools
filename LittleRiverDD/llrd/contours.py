@@ -12,7 +12,7 @@ import arcpy
 import os
 arcpy.env.overwriteOutput = True
 
-def getContours(dem, out_contours, interval=2, z_factor=3.28084, index_interval=10):
+def getContours(dem, out_contours, interval=2, z_factor=3.28084, index_interval=10, contour_length_threshold=200):
     """generates clean contours, especially in areas with low relief.  Smooths the
     raster with focal statistics first.
 
@@ -28,10 +28,15 @@ def getContours(dem, out_contours, interval=2, z_factor=3.28084, index_interval=
             will recieve a value of 'INDEX', while all others will be 'INTERMEDIATE'.
             This is helpful for displaying contours at evey 10 ft differently than
             all the others.  Default is 10.
+
+        contour_length_threshold -- a minimum contour length can be specified to remove any
+            closed polylines for very smal areas.  All contours with a length less than this
+            value will be removed.
     """
     interval = int(interval)
     z_factor = float(z_factor)
     index_interval = int(index_interval)
+    contour_length_threshold = int(contour_length_threshold)
 
     # check out spatial analyst license if available
     if arcpy.CheckExtension('Spatial').lower() == 'available':
@@ -52,13 +57,17 @@ def getContours(dem, out_contours, interval=2, z_factor=3.28084, index_interval=
 
     # add 'CONTOUR_TY' field and calculate
     arcpy.management.AddField(out_contours, 'CONTOUR_TY', 'TEXT')
-    with arcpy.da.UpdateCursor(out_contours, ['Contour', 'CONTOUR_TY']) as rows:
+    with arcpy.da.UpdateCursor(out_contours, ['Contour', 'CONTOUR_TY', 'SHAPE@LENGTH']) as rows:
         for r in rows:
             if r[0] % index_interval == 0:
                 r[1] = 'Index'
             else:
                 r[1] = 'Intermediate'
-            rows.updateRow(r)
+            if r[2] >= contour_length_threshold:
+                rows.updateRow(r)
+            else:
+                rows.deleteRow()
+
 
     # check in license
     arcpy.CheckInExtension('Spatial')
