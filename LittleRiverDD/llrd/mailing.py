@@ -46,9 +46,10 @@ def avery5160(outfile, addressInput, font='Helvetica', font_size=10, filter_dups
 
     # loop thru addresses and remove duplicates if chosen
     if filter_dups:
+        silly = '~|~'
         count_add = len(addressInput)
-        unique = list(set('~'.join(map(str, filter(None, it))) for it in addressInput))
-        addresses = [s.split('~') for s in unique if s.count('~') in (2,3)]
+        unique = list(set(silly.join(map(str, filter(None, it))) for it in addressInput))
+        addresses = [s.split(silly) for s in unique if s.count(silly) in (2,3)]
     else:
         addresses = addressInput
 
@@ -64,7 +65,7 @@ def avery5160(outfile, addressInput, font='Helvetica', font_size=10, filter_dups
 
             # new column
             elif count > 0 and count % 10 == 0 and len(item) > 0:
-                horizontal_start += 2.8 *inch
+                horizontal_start += 2.75 *inch
                 vertical_start = vs * inch
 
             label = out_pdf.beginText()
@@ -76,7 +77,7 @@ def avery5160(outfile, addressInput, font='Helvetica', font_size=10, filter_dups
                     label.textLine(line)
 
             out_pdf.drawText(label)
-            vertical_start -= 1.05 * inch
+            vertical_start -= 1.0 * inch
             count += 1
 
     # save pdf
