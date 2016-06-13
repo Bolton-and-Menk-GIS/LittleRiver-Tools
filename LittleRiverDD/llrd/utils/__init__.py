@@ -259,15 +259,15 @@ def timeit(function):
     """
 ##    if function.__name__ != 'writeConfig':
 ##        toolLog(function)
-    st = datetime.datetime.now()
     def wrapper(*args, **kwargs):
+        st = datetime.datetime.now()
         output = function(*args, **kwargs)
+        elapsed = str(datetime.datetime.now()-st)[:-4]
         if hasattr(function, 'im_class'):
             fname = '.'.join([function.im_class.__name__, function.__name__])
         else:
             fname = function.__name__
-        Message('"{0}" from {1} Complete - Elapsed time: {2}'.format(fname, sys.modules[function.__module__],
-                                                            str(datetime.datetime.now()-st)[:-4]))
+        Message('"{0}" from {1} Complete - Elapsed time: {2}'.format(fname, sys.modules[function.__module__], elapsed))
         return output
     return wrapper
 
