@@ -50,10 +50,6 @@ COUNTY_GIS = 'COUNTY'
 DEFAULT_SORT = ';'.join([CODE_GIS, DESCRIPTION_GIS])
 ADMINISTRATIVE_FEE = 'ADMINISTRATIVE FEE'
 
-# admin fee formula for spreadsheets
-# use .format(b='C19', r=10) # where b is benefit and r is rate
-ADMIN_FEE_FORMULA = 'IF(27.5-({b}*{r}) > 0, 27.5-({b}*{r}), 0)'
-
 ##@utils.timeit
 def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_by=DEFAULT_SORT):
     """Generates the Maintenance Assessment List for a county as an excel file.
@@ -154,8 +150,6 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
     hide_admin = " AND {} <> '{}'".format(DESCRIPTION_GIS, ADMINISTRATIVE_FEE)
     null_secs = " AND {} NOT LIKE '%99%'".format(SEC_TWN_RNG_GIS)
     where_clause = ' AND '.join(filter(None, ["{} = '{}'".format(COUNTY_GIS, county.upper()), where_clause]))
-
-    # grab benefits from summary table
 
     # get sorted section-township-range
     utils.Message(fields)

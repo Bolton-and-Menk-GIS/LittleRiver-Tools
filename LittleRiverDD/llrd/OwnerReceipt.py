@@ -8,11 +8,8 @@
 # Copyright:   (c) calebma 2016
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-from . import excel
-import xlwt
-reload(excel)
-from excel import *
-from excel_styles import *
+from .excel import *
+from .excel_styles import *
 from . import utils
 from .mailing import avery5160
 import os
@@ -21,12 +18,14 @@ import sys
 import json
 from string import ascii_uppercase
 
-arcpy.env.overwriteOutput = True
-
 # third party
 SOURCE_DIR = os.path.dirname(os.path.dirname(__file__))
 sys.path.append(os.path.join(SOURCE_DIR, 'thirdParty'))
+from comtypes.client import CreateObject
+from PyPDF2 import PdfFileReader, PdfFileMerger
 import munch
+
+arcpy.env.overwriteOutput = True
 
 # headers
 YEAR = 'YEAR'
@@ -93,6 +92,46 @@ test={
         }
       ]
     }
+
+def merge_pdfs(pdfs, new_pdf, remove_afer_merging=True):
+    merger = PdfFileMerger()
+    for pdf in pdfs:
+        with open(pdf, 'rb') as p:
+            merger.append(PdfFileReader(p))
+        if remove_afer_merging:
+            try:
+                os.remove(pdf)
+            except:
+                pass
+
+    merger.write(new_pdf)
+
+def create_pdf_summary(xls_files, out_pdf, title_rows='$1:$9'):
+    """
+
+    """
+    xl = CreateObject('Excel.application')
+    pdfs = []
+    for i, xls in enumerate(xls_files):
+        pdf = xls.replace('.xls', '.pdf')
+        wb = xl.Workbooks.Open(xls)
+        ws = wb.ActiveSheet
+        ws.PageSetup.PrintTitleRows = title_rows
+        wb.Save()
+        ws.ExportAsFixedFormat(0, pdf, 0, True)
+        wb.Close()
+        pdfs.append(pdf)
+
+        if not i % 100 and i > 1:
+            utils.Message('Exported reports {}-{} of {} to PDF...'.format(i - 99, i, len(xls_files)))
+
+    xl.Application.Quit()
+    del xl, wb, ws
+
+    # combine pdfs
+    pdfs.sort()
+    merge_pdfs(pdfs, out_pdf)
+    return
 
 class OwnerBreakdown(object):
     json = {}
@@ -282,7 +321,7 @@ def getMXDPath():
 
     return mapDoc
 
-##@utils.timeit
+@utils.timeit
 def generateOwnerReceiptsForCounty(out_folder, county, year=utils.LAST_YEAR, where_clause='', mail_to_name=DEFAULT_MAIL_NAME,
                                 mail_to_addr=DEFAULT_MAIL_ADDR, mail_to_csz=DEFAULT_MAIL_CSZ, add_map_reports=False):
     """ Generates owner receipts for the entire county
@@ -310,10 +349,11 @@ def generateOwnerReceiptsForCounty(out_folder, county, year=utils.LAST_YEAR, whe
         utils.Message('Generating Receipts for {} land owners...'.format(len(owners)))
 
     # generate reports
-    addresses = []
+    addresses, xls_files = [], []
     for i, owner in enumerate(owners):
-        generateOwnerReceipt(out_folder, owner, mail_to_name, mail_to_addr, mail_to_csz, add_map_reports, mxd)
+        out_xls = generateOwnerReceipt(out_folder, owner, mail_to_name, mail_to_addr, mail_to_csz, add_map_reports, mxd)[0]
         addresses.append([owner.name, owner.address, owner.csz])
+        xls_files.append(out_xls)
 
         if not i % 100 and i > 1:
             utils.Message('Created reports {}-{} of {}...'.format(i - 99, i, len(owners)))
@@ -323,6 +363,11 @@ def generateOwnerReceiptsForCounty(out_folder, county, year=utils.LAST_YEAR, whe
     # generate mailing labels
     outPDF = os.path.join(out_folder, '{}_mailing.pdf'.format(county.replace(' ','_')))
     avery5160(outPDF, addresses)
+
+    # generate pdf report combined
+    utils.Message('Generating PDF copies of the receipts, this could take a while...')
+    out_pdf = os.path.join(out_folder, '{}_Receipts.pdf'.format(county.replace(' ','_')))
+    create_pdf_summary(xls_files, out_pdf)
 
     del mxd
     return
@@ -485,6 +530,7 @@ def generateOwnerReceipt(out_folder, owner_json, mail_to_name=DEFAULT_MAIL_NAME,
     # **************************************************************************************
     #
     # do map report
+    out_pdf = None
     pdfDoc = None
     if add_map_reports and isinstance(mxd, basestring) and os.path.exists(mxd):
         mxd = arcpy.mapping.MapDocument(mxd)
@@ -580,4 +626,4 @@ def generateOwnerReceipt(out_folder, owner_json, mail_to_name=DEFAULT_MAIL_NAME,
             pdfDoc.saveAndClose()
             del pdfDoc
 
-    return
+    return (out_excel, out_pdf)

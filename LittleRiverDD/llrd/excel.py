@@ -9,6 +9,7 @@
 import sys
 import os
 import datetime
+from .excel_styles import *
 
 SOURCE_DIR = os.path.dirname(os.path.dirname(__file__))
 sys.path.append(os.path.join(SOURCE_DIR, 'thirdParty'))
@@ -79,14 +80,12 @@ class ExcelSheet(object):
             borders.bottom = Borders.THIN
 
         self.normStyle = XFStyle()
+        self.normStyle.font = normFont
         if use_borders:
             self.normStyle.borders = borders
 
         # headers
         if not isinstance(styleHeaders, XFStyle):
-            fntHeaders = Font()
-            fntHeaders.bold = True
-            fntHeaders.height = 220
             self.styleHeaders = XFStyle()
             self.styleHeaders.font = fntHeaders
             self.styleHeaders.borders = borders
@@ -98,6 +97,7 @@ class ExcelSheet(object):
         self.styleDate = XFStyle()
         self.styleDate.borders = borders
         self.styleDate.num_format_str = 'MM/DD/YYYY'
+        self.styleDate.font = normFont
         #***************************************************************************
         #
         # instance styles defined by user or defaults
@@ -190,7 +190,7 @@ class ExcelSheet(object):
                     style = self._defaultStyle
 
             if value is None:
-                value = ''
+                value = u''
 
             # update dict to autofit columns
             if len(unicode(value)) > self.__colwidths[i] and not self._explicit_widths:

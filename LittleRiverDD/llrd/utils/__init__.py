@@ -42,7 +42,11 @@ PARCEL_LR_FIELDS = os.path.join(BIN, 'lr_fields.json')
 OWNER_CODE = 'OWNER_CODE'
 PARCEL_ID = 'PARCEL_ID'
 PIN = 'PIN'
+TOT_BENEFIT = 'TOT_BENEFIT'
 SEC_TWN_RNG = 'SEC_TWN_RNG'
+TOT_ADMIN_FEE = 'TOT_ADMIN_FEE'
+ADMINISTRATION_FEE = 'ADMINISTRATION FEE'
+DESCRIPTION = 'DESCRIPTION'
 
 LAST_YEAR = datetime.datetime.now().year - 1
 
@@ -584,6 +588,14 @@ def GetCentroids(in_fc, output, point_location='INSIDE'):
     Message('Created: "{0}"'.format(output))
     return output
 
+def get_admin_fee(benefit, rate=10, max_fee=27.5):
+
+    admin_fee = max_fee - ((rate * 0.01) * benefit)
+    if admin_fee > 0:
+        return round(admin_fee, 2)
+    else:
+        return 0
+
 class Geodatabase(object):
     """Wrapper for Little River District Geodatabase
 
@@ -645,6 +657,44 @@ class Geodatabase(object):
         self.flag_table = os.path.join(self.path, self.flag_table_name)
         self.current_ws = self.path
         arcpy.env.workspace = self.path
+
+    def calculate_admin_fee(self, rate=10, max_fee=27.5):
+        """calculates admin fee for all parcels
+
+        rate -- tax rate for current tax year
+        """
+        sumd = {}
+        with UpdateCursor(self.summary_table, [PIN, PARCEL_ID, TOT_BENEFIT, TOT_ADMIN_FEE]) as rows:
+            for r in rows:
+                if r[2] and r[0]:
+                    r[3] = get_admin_fee(r[2], rate, max_fee)
+                    rows.updateRow(r)
+                    sumd[r[0]] = dict(zip(['pid', 'benefit', 'fee'], r[1:]))
+
+        sumd = munch.munchify(sumd)
+
+        # query admin fee records and upate the fee
+        where = "{} = '{}'".format(DESCRIPTION, ADMINISTRATION_FEE)
+        fields = [PIN, 'COUNTY_MAP_NUMBER','ASSESSMENT']
+        with UpdateCursor(self.breakdown_table, fields, where_clause=where) as rows:
+            for r in rows:
+                if r[0] in sumd:
+                    # fix parcel id?
+                    #r[1] = sumd[r[0]]
+                    r[2] = sumd[r[0]].get('fee', 0)
+                    rows.updateRow(r)
+                    del sumd[r[0]]
+
+        Message('Updated Admin Fees')
+
+        # do we want to add records still in the dict to the breakdown table?
+##        with InsertCursor(self.breakdown_table, fields) as irows:
+##            for pin, atts in sumd.iteritems():
+##                # populate row
+##
+##                irows.insertRow(r)
+
+        return
 
     def walk(self, wild='*', ftype='All'):
         """
@@ -1167,7 +1217,7 @@ class Owner(object):
         """count of parcel assessments"""
         return len(self.json.assessments)
 
-    def __nonzero__(self):
+    def __bool__(self):
         """is not 0"""
         return bool(len(self))
 
@@ -1263,7 +1313,7 @@ class LandOwners(object):
         """count of owners in county"""
         return len(self.owners)
 
-    def __nonzero__(self):
+    def __bool__(self):
         """is not 0"""
         return bool(len(self))
 

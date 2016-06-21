@@ -33,10 +33,14 @@ alignWrap = Alignment()
 alignWrap.horz = Alignment.HORZ_CENTER
 alignWrap.wrap = Alignment.WRAP_AT_RIGHT
 
+# normal font
+normFont = Font()
+normFont.name = 'SansSerif'
+
 # headers font
 fntHeaders = Font()
-fntHeaders.height = 220
-fntHeaders.name = 'Calibri'
+fntHeaders.height = 200
+fntHeaders.name = 'SansSerif'
 
 # header styles
 styleHeaders = XFStyle()
