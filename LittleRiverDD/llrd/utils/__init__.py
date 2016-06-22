@@ -603,7 +603,7 @@ def GetCentroids(in_fc, output, point_location='INSIDE'):
 
 def get_admin_fee(benefit, rate=10, max_fee=27.5):
 
-    admin_fee = max_fee - ((rate * 0.01) * benefit)
+    admin_fee = max_fee - ((float(rate) * 0.01) * benefit)
     if admin_fee > 0:
         return admin_fee
     else:
@@ -701,6 +701,7 @@ class Geodatabase(object):
         Message('Updated Admin Fees')
 
         # do we want to add records still in the dict to the breakdown table?
+        updateConfig(rate=rate)
 ##        with InsertCursor(self.breakdown_table, fields) as irows:
 ##            for pin, atts in sumd.iteritems():
 ##                # populate row

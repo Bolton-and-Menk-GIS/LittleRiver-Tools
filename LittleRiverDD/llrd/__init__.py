@@ -4,6 +4,7 @@ import datetime
 from . import utils
 from . import AbstractOfReceipts
 from . import MaintenanceAssessmentList
+from . import MaintenanceAssessmentList_cs
 from . import proxy
 from . import OwnerReceipt
 from . import flags
@@ -28,7 +29,7 @@ class Toolbox(object):
         # List of tool classes associated with this toolbox
         self.tools = [SetupConfigFile, AbstractOfReceiptsTool, MaintenanceAssessmentListTool, ProxyTool,
                       OwnerReceiptsCodeTool, OwnerReceiptsCountyTool, CreateFlagTable, DownloadParcels,
-                      GenerateContoursTool]
+                      GenerateContoursTool, MaintenanceAssessmentListTool_CS]
 
 
 class SetupConfigFile(object):
@@ -249,6 +250,107 @@ class MaintenanceAssessmentListTool(object):
         """The source code of the tool."""
         args = [p.valueAsText for p in parameters][:-1]
         utils.passArgs(MaintenanceAssessmentList.generateMAL, args)
+
+class MaintenanceAssessmentListTool_CS(object):
+    def __init__(self):
+        """Define the tool (tool name is the name of the class)."""
+        self.label = "Generate Maintenance Assessment List (Custom Sort)"
+        self.description = ""
+        self.category = 'Reports'
+        self.canRunInBackground = False
+        self.gdb = utils.Geodatabase()
+
+    def getParameterInfo(self):
+        """Define parameter definitions"""
+        output = arcpy.Parameter(displayName="Output Excel File",
+            name="out_excel",
+            datatype="File",
+            parameterType="Required",
+            direction="Output")
+
+        county = arcpy.Parameter(displayName="County",
+            name="county",
+            datatype="String",
+            parameterType="Required",
+            direction="Input")
+
+        rate = arcpy.Parameter(displayName="Rate",
+            name="rate",
+            datatype="Double",
+            parameterType="Required",
+            direction="Input")
+
+        year = arcpy.Parameter(displayName="Year",
+            name="year",
+            datatype="Long",
+            parameterType="Required",
+            direction="Input")
+
+        where = arcpy.Parameter(displayName="Where Clause",
+            name="where_clause",
+            datatype="SQL Expression",
+            parameterType="Optional",
+            direction="Optional")
+
+        orderBy = arcpy.Parameter(displayName="Order By",
+            name="orderBy",
+            datatype="Value Table",
+            parameterType="Optional",
+            direction="Input")
+
+        # dummy parameter, just necessary for where clause
+        table = arcpy.Parameter(displayName='Table',
+            name='table',
+            datatype='Table',
+            parameterType='Optional',
+            direction='Input')
+
+        # set value for table so where clause can be applied
+        table.value = self.gdb.summary_table
+        where.parameterDependencies = [table.name]
+
+        # value table for Order By
+        orderBy.parameterDependencies = [table.name]
+        orderBy.columns = [['Field', 'Fields']]
+
+        return [output, county, rate, year, where, orderBy, table]
+
+    def isLicensed(self):
+        """Set whether tool is licensed to execute."""
+        return True
+
+    def updateParameters(self, parameters):
+        """Modify the values and properties of parameters before internal
+        validation is performed.  This method is called whenever a parameter
+        has been changed."""
+        parameters[6].enabled = False
+        parameters[6].value = self.gdb.breakdown_table
+        parameters[0].filter.list = ['xls']
+        if not parameters[5].altered:
+            parameters[5].value = [['CODE'], ['DESCRIPTION']]
+        parameters[1].filter.list = self.gdb.list_counties()
+
+        parameters[2].filter.type = 'Range'
+        parameters[2].filter.list = [1.0, 100.0]
+        if not parameters[2].value:
+            parameters[2].value = 9.0
+
+        cur_year = datetime.datetime.now().year
+        parameters[3].filter.list = range(cur_year-5, cur_year + 5)
+        if not parameters[3].value:
+            parameters[3].value = cur_year - 1
+
+        return
+
+    def updateMessages(self, parameters):
+        """Modify the messages created by internal validation for each tool
+        parameter.  This method is called after internal validation."""
+        return
+
+    def execute(self, parameters, messages):
+        """The source code of the tool."""
+        args = [p.valueAsText for p in parameters][:-1]
+        utils.passArgs(MaintenanceAssessmentList_cs.generateMAL, args)
 
 class ProxyTool(object):
     def __init__(self):

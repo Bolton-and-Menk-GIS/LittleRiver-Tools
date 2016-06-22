@@ -257,7 +257,7 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
     # now add grand totals
     totals = {k: Formula(' + '.join([f.text() for f in v])) for k,v in grand_tots.iteritems()}
 
-    totals[PID] = 'GRAND TOTAL for all'
+    totals[PID] = 'GRAND TOTAL'
     totals['styleDict'] = sectionBreakDict
     ws.addRow(**totals)
 
@@ -278,19 +278,14 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
 
     # add title rows
     xl = CreateObject('Excel.application')
-    pdf = out_excel.replace('.xls', '.pdf')
     wb = xl.Workbooks.Open(out_excel)
     ws = wb.ActiveSheet
     ws.PageSetup.PrintTitleRows = '$1:$4'
     wb.Save()
-    ws.ExportAsFixedFormat(0, pdf, 0, True)
     wb.Close()
     os.startfile(out_excel)
     xl.Application.Quit()
     del xl
 
-    try:
-        os.startfile(pdf)
-    except:
-        pass
+    os.startfile(out_excel)
     return out_excel

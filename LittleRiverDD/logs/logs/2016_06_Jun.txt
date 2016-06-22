@@ -34,3 +34,5 @@ llrd.utils.wrapper	calebma	2016-06-22	03:06:09 PM
 llrd.utils.wrapper	calebma	2016-06-22	03:08:47 PM
 llrd.utils.wrapper	calebma	2016-06-22	03:09:15 PM
 llrd.MaintenanceAssessmentList.generateMAL	calebma	2016-06-22	03:36:56 PM
+llrd.MaintenanceAssessmentList_cs.generateMAL	calebma	2016-06-22	05:17:16 PM
+llrd.MaintenanceAssessmentList_cs.generateMAL	calebma	2016-06-22	05:18:55 PM
