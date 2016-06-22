@@ -18,6 +18,9 @@ import os
 import arcpy
 arcpy.env.overwriteOutput = True
 from string import ascii_uppercase
+import sys
+sys.path.append(utils.THIRD_PARTY)
+from comtypes.client import CreateObject
 
 # spreadsheet headers
 CODE = 'CODE'
@@ -45,10 +48,12 @@ EXEMPT_GIS = 'EXEMPT'
 SEQUENCE_GIS = 'SEQUENCE'
 DATE_PAID_GIS = 'DATE_PAID'
 COUNTY_GIS = 'COUNTY'
+PIN = 'PIN'
 
 # defaults and constants
 DEFAULT_SORT = ';'.join([CODE_GIS, DESCRIPTION_GIS])
 ADMINISTRATIVE_FEE = 'ADMINISTRATIVE FEE'
+no_flag = "FLAG = 'N'"
 
 # admin fee formula for spreadsheets
 # use .format(b='C19', r=10) # where b is benefit and r is rate
@@ -149,13 +154,12 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
     exempt_ind = fields.index(EXEMPT_GIS)
     date_ind = fields.index(DATE_PAID_GIS)
     desc_ind = fields.index(DESCRIPTION_GIS)
+    seq_ind = fields.index(SEQUENCE_GIS)
 
     # alter initial where clause to include county
     hide_admin = " AND {} <> '{}'".format(DESCRIPTION_GIS, ADMINISTRATIVE_FEE)
     null_secs = " AND {} NOT LIKE '%99%'".format(SEC_TWN_RNG_GIS)
-    where_clause = ' AND '.join(filter(None, ["{} = '{}'".format(COUNTY_GIS, county.upper()), where_clause]))
-
-    # grab benefits from summary table
+    where_clause = ' AND '.join(filter(None, ["{} = '{}'".format(COUNTY_GIS, county.upper()), where_clause, no_flag]))
 
     # get sorted section-township-range
     utils.Message(fields)
@@ -165,25 +169,27 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
     utils.Message('Cycling through {} Sections...'.format(len(sorted_plss)))
 
     # now add rows to spreadsheet
+    all_pins = {}
+    grand_tots = {ACRES: [], BENEFIT: [], ASSESSMENT: []}
     for plss in sorted_plss:
         start_index_row = ws._currentRowIndex + 1
 
         # form where clause based on this section only
         where = ' AND '.join(filter(None, [where_clause, "{} = '{}'".format(SEC_TWN_RNG_GIS, plss)]))
 
-        with arcpy.da.SearchCursor(gdb.breakdown_table, fields, where_clause=where, sql_clause=sql) as rows:
+        with arcpy.da.SearchCursor(gdb.breakdown_table, fields + [PIN], where_clause=where, sql_clause=sql) as rows:
             for r in rows:
 
                 # for some reason the cursor will not fetch records if this is added to
                 #  the where clause...Bug???
                 if r[desc_ind] != ADMINISTRATIVE_FEE:
                     # validate date paid
-                    vals = list(r)
+                    vals = list(r)[:len(fields)]
 
-                    if not vals[date_ind]:
-                        vals[date_ind] = default_date_paid
+##                    if not vals[date_ind]:
+##                        vals[date_ind] = default_date_paid
                     ws.addRow(*vals)
-
+                    all_pins[r[-1]] = vals
 
         # add blank row with dashed style
         ws.addRow(styleDict=yearBreakDict)
@@ -196,9 +202,65 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
         totals[PID] = 'TOTAL for Section {}'.format(plss)
         totals['styleDict'] = sectionBreakDict
         ws.addRow(**totals)
+        for k in [ACRES, BENEFIT, ASSESSMENT]:
+            grand_tots[k].append(totals[k])
 
         # add another blank row
         ws._currentRowIndex += 1
+
+    # now do admin fees
+    #
+    # recalculate admin fees if necessary
+    #
+    if int(rate) != utils.getConfig().get('rate'):
+        gdb.calculate_admin_fee(rate)
+
+    # grab benefits from summary table
+    admin_fees = {}
+    summary_fields = ['PIN', 'TOT_ADMIN_FEE', 'PARCEL_ID', 'DATE_PAID']
+    with arcpy.da.SearchCursor(gdb.summary_table, summary_fields) as rows:
+        for r in rows:
+            if r[0] in all_pins and r[1]:
+                vals = all_pins[r[0]]
+                new_vals = vals[:]
+                new_vals[desc_ind] = ADMINISTRATIVE_FEE
+                new_vals[seq_ind] = '9999'
+                new_vals[acre_ind] = 0
+                new_vals[benefit_ind] = 0
+                new_vals[assessment_ind] = r[1]
+                admin_fees[r[0]] = new_vals
+
+    start_index_row = ws._currentRowIndex + 1
+    for pin, vals in sorted(admin_fees.iteritems()):
+        ws.addRow(*vals)
+
+    # add blank row with dashed style
+    ws.addRow(styleDict=yearBreakDict)
+
+    # add another blank row
+    ws._currentRowIndex += 1
+
+    # now add grand totals
+    totals = {h:Formula('SUM({col}{st}:{col}{en})'.format(col=ascii_uppercase[i],
+            st=start_index_row, en=ws._currentRowIndex-1))
+            for i,h in enumerate(headers) if i in range(acre_ind, exempt_ind)}
+
+    totals[PID] = 'TOTAL for all Admin Fees'
+    totals['styleDict'] = sectionBreakDict
+    ws.addRow(**totals)
+    for k in [ACRES, BENEFIT, ASSESSMENT]:
+            grand_tots[k].append(totals[k])
+
+    # add another blank row
+    ws._currentRowIndex += 1
+
+    # now add grand totals
+    totals = {k: Formula(' + '.join([f.text() for f in v])) for k,v in grand_tots.iteritems()}
+
+    totals[PID] = 'GRAND TOTAL for all'
+    totals['styleDict'] = sectionBreakDict
+    ws.addRow(**totals)
+
 
     # set print properties
     ws.ws.set_fit_width_to_pages(1)
@@ -212,6 +274,23 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
 
     # save it
     wb.save(out_excel)
-    os.startfile(out_excel)
     del wb
+
+    # add title rows
+    xl = CreateObject('Excel.application')
+    pdf = out_excel.replace('.xls', '.pdf')
+    wb = xl.Workbooks.Open(out_excel)
+    ws = wb.ActiveSheet
+    ws.PageSetup.PrintTitleRows = '$1:$4'
+    wb.Save()
+    ws.ExportAsFixedFormat(0, pdf, 0, True)
+    wb.Close()
+    os.startfile(out_excel)
+    xl.Application.Quit()
+    del xl
+
+    try:
+        os.startfile(pdf)
+    except:
+        pass
     return out_excel

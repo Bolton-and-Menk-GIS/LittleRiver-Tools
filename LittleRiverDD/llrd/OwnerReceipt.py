@@ -20,7 +20,7 @@ from string import ascii_uppercase
 
 # third party
 SOURCE_DIR = os.path.dirname(os.path.dirname(__file__))
-sys.path.append(os.path.join(SOURCE_DIR, 'thirdParty'))
+sys.path.append(utils.THIRD_PARTY)
 from comtypes.client import CreateObject
 from PyPDF2 import PdfFileReader, PdfFileMerger
 import munch
@@ -125,6 +125,7 @@ def create_pdf_summary(xls_files, out_pdf, title_rows='$1:$9'):
         if not i % 100 and i > 1:
             utils.Message('Exported reports {}-{} of {} to PDF...'.format(i - 99, i, len(xls_files)))
 
+    utils.Message('Created reports {}-{}\n'.format((int(i/100) * 100) + 1, len(xls_files)))
     xl.Application.Quit()
     del xl, wb, ws
 
@@ -365,7 +366,7 @@ def generateOwnerReceiptsForCounty(out_folder, county, year=utils.LAST_YEAR, whe
     avery5160(outPDF, addresses)
 
     # generate pdf report combined
-    utils.Message('Generating PDF copies of the receipts, this could take a while...')
+    utils.Message('Generating PDF copies of the receipts, this could take a while...\n')
     out_pdf = os.path.join(out_folder, '{}_Receipts.pdf'.format(county.replace(' ','_')))
     create_pdf_summary(xls_files, out_pdf)
 
@@ -490,7 +491,6 @@ def generateOwnerReceipt(out_folder, owner_json, mail_to_name=DEFAULT_MAIL_NAME,
         assessment[YEAR] = owner_json.year
 
         ws.addRow(**assessment)
-
 
     # add empty row and total row
     ws.addRow(styleDict=emptyRowStyleDict)

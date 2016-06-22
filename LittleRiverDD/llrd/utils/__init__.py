@@ -55,8 +55,8 @@ arcpy.env.overwriteOutput = True
 
 __all__ = ['BIN', 'DATA', 'CONFIG', 'PARCEL_FIELDS', 'PARCEL_ID', 'Message', 'fixGpArgs', 'parseValueTable',
            'ErrorLog', 'toolLog', 'timeit', 'passArgs', 'zipdir', 'unzip', 'assignUniqueName', 'getConfig',
-           'getParcelConfig', 'getParcelFields', 'getFieldMapDict', 'getTemplate', 'writeConfig', 'field_mappings',
-           'Geodatabase', 'Owner', 'LandOwners', 'getPIN', 'UpdateCursor', 'InsertCursor']
+           'getParcelConfig', 'getParcelFields', 'getFieldMapDict', 'getTemplate', 'writeConfig', 'fieldMappings',
+           'Geodatabase', 'Owner', 'LandOwners', 'getPIN', 'UpdateCursor', 'InsertCursor', 'updateConfig']
 
 #******************************************************************************************************************************
 #
@@ -438,6 +438,14 @@ def getConfig():
         raise IOError('Configuration File "{}" does not exist!'.format(CONFIG))
     return munch.munchify(json.load(open(CONFIG, 'r'), 'utf-8'))
 
+def updateConfig(**kwargs):
+    cd = getConfig()
+    for k,v in kwargs.iteritems():
+        cd[k] = v
+    with open(CONFIG, 'w') as f:
+        json.dump(cd, f, indent=4, sort_keys=True, ensure_ascii=False)
+    return cd
+
 def getParcelConfig(configFile):
     """get parcel field configuration"""
     if not os.path.exists(configFile):
@@ -481,7 +489,12 @@ def getTemplate():
         return munch.munchify(json.load(f))
 
 def writeConfig(**kwargs):
-    """write configuration file to JSON"""
+    """write configuration file to JSON
+
+    Supported Kwargs:
+        Geodatabase -- path to LRRD gdb
+        rate -- current rate for admin fee (default is 10%)
+    """
     d = {k:v for k,v in kwargs.iteritems()}
     with open(CONFIG, 'w') as f:
         json.dump(d, f, indent=4, sort_keys=True, ensure_ascii=False)
@@ -592,7 +605,7 @@ def get_admin_fee(benefit, rate=10, max_fee=27.5):
 
     admin_fee = max_fee - ((rate * 0.01) * benefit)
     if admin_fee > 0:
-        return round(admin_fee, 2)
+        return admin_fee
     else:
         return 0
 
@@ -1071,6 +1084,20 @@ class Geodatabase(object):
                     ad = dict(zip(match_flds, r[:-2]))
                     ad['DESCRIPTION & MAP NUMBER'] = '\r\n'.join([s if s else '' for s in [r[-2], r[0]]])
                     owners[r[-1]]['assessments'].append(ad)
+
+        # get all admin fees from summary table
+        with arcpy.da.SearchCursor(self.summary_table, ['OWNER_CODE', 'PARCEL_ID', 'TOT_ADMIN_FEE'], county_where) as rows:
+            for r in rows:
+                if r[0] in owners and r[2]:
+                    owners[r[0]]['assessments'].append({
+                      "SN-TP-RG": "99-99-99",
+                      "SEQ": "99999",
+                      "DESCRIPTION & MAP NUMBER": "ADMINISTRATIVE FEE\r\n{}".format(r[1]),
+                      "ACRES": 0,
+                      "BENEFITS": 0,
+                      "DRAINAGE FEE AMOUNT": r[2],
+                      "pin": r[1]
+                    })
 
         return munch.munchify(owners)
 

@@ -1,4 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*_103.mxd
+*- Copy.py
 !auth.pyc

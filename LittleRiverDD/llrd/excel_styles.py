@@ -35,12 +35,12 @@ alignWrap.wrap = Alignment.WRAP_AT_RIGHT
 
 # normal font
 normFont = Font()
-normFont.name = 'SansSerif'
+normFont.name = 'Arial'
 
 # headers font
 fntHeaders = Font()
 fntHeaders.height = 200
-fntHeaders.name = 'SansSerif'
+fntHeaders.name = 'Arial'
 
 # header styles
 styleHeaders = XFStyle()

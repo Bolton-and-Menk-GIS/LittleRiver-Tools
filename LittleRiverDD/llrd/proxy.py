@@ -17,6 +17,9 @@ import shutil
 import tempfile
 import calendar
 from .mailing import avery5160
+import sys
+sys.path.append(utils.THIRD_PARTY)
+from PyPDF2 import PdfFileReader, PdfFileMerger
 
 # env
 arcpy.env.overwriteOutput = True
@@ -37,11 +40,9 @@ def getProxyMXD():
 @utils.timeit
 def generateProxyBallots(out_folder, county, meeting_city=DEFAULT_CITY, meeting_county=DEFAULT_COUNTY, meeting_date=DEFAULT_DATE):
     """generate proxy reports for each owner
-
     Required:
         out_folder -- output folder location for all proxy ballots
         county -- name of county to generate proxy for
-
     Optional:
         meeting_city -- name of city where meeting will occur
         meeting_county -- name of county where meeting will occur
@@ -71,7 +72,7 @@ def generateProxyBallots(out_folder, county, meeting_city=DEFAULT_CITY, meeting_
     finalPDF = arcpy.mapping.PDFDocumentCreate(os.path.join(out_folder, '{}_Proxy.pdf'.format(county.replace(' ','_'))))
 
     # iterate through landowners and generate proxy for each one
-    for i,owner in enumerate(landowners[:75]):
+    for i,owner in enumerate(landowners):
         out_pdf = os.path.join(out_folder, owner.code + '_proxy.pdf')
 
         # set text elms
@@ -96,13 +97,10 @@ def generateProxyBallots(out_folder, county, meeting_city=DEFAULT_CITY, meeting_
         except:
             pass
 
-        pdfCount = i + 1
-        if pdfCount %100 == 0:
-            utils.Message('Generated Proxy Ballots {}-{} of {}'.format(pdfCount-99, pdfCount, landowners.count))
+        if not i % 100 and i > 1:
+            utils.Message('Created reports {}-{} of {}...'.format(i - 99, i, landowners.count))
 
-##    if pdfCount != landowners.count:
-##        utils.Message('Generated Proxy Ballots {}-{}'.format(pdfCount+1, landowners.count))
-
+    utils.Message('Created reports {}-{}'.format((int(i/100) * 100) + 1, landowners.count))
 
     # clean up
     finalPDF.saveAndClose()
