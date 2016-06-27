@@ -700,14 +700,44 @@ class Geodatabase(object):
 
         Message('Updated Admin Fees')
 
-        # do we want to add records still in the dict to the breakdown table?
+        # update configuration
         updateConfig(rate=rate)
-##        with InsertCursor(self.breakdown_table, fields) as irows:
-##            for pin, atts in sumd.iteritems():
-##                # populate row
-##
-##                irows.insertRow(r)
+        return
 
+    def create_archive(year=LAST_YEAR):
+        """creates an archive table for the last tax year and resets the DATE_PAID
+        and AMOUNT_PAID fields.
+
+        Required:
+            year -- tax year of table archive
+        """
+        archive_gdb = os.path.join(os.path.dirname(self.path), 'Assessment_Archives')
+        if not arcpy.Exists(archive_gdb):
+            arcpy.management.CreateFileGDB(*os.path.split(archive_gdb))
+
+        for table in (self.summary_table, self.breakdown_table):
+            out_table = os.path.join(archive_gdb, os.path.basename(table) + '_{}'.format(year))
+            arcpy.management.CopyRows(table, out_table)
+
+            if table == self.summary_table:
+                # create delinquent records
+                del_tab_name = 'Delinquent_Parcels_{}'.format(year)
+                del_tab = os.path.join(archive_gdb, del_tab_name)
+                where ="PAID = 'N' AND FLAG = 'N"
+                arcpy.conversion.TableToTable(table, archive_gdb, del_tab_name, where)
+                if int(arcpy.management.GetCount(del_tab).getOutput(0)) == 0:
+                    arcpy.management.Delete(del_tab)
+
+                # now reset fields
+                fields = ['AMOUNT_PAID', 'DATE_PAID', 'PAID']
+                with UpdateCursor(table, fields) as rows:
+                    for r in rows:
+                        rows.updateRow([None,None,'N'])
+
+            else:
+                with UpdateCursor(table, ['DATE_PAID']) as rows:
+                    for r in rows:
+                        rows.updateRow([None])
         return
 
     def walk(self, wild='*', ftype='All'):
