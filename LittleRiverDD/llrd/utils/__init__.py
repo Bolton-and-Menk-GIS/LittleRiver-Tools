@@ -20,6 +20,7 @@ import zipfile
 import ftplib
 import logging
 from collections import OrderedDict
+from .._defaults import *
 
 # custom imports
 try:
@@ -47,6 +48,7 @@ SEC_TWN_RNG = 'SEC_TWN_RNG'
 TOT_ADMIN_FEE = 'TOT_ADMIN_FEE'
 ADMINISTRATION_FEE = 'ADMINISTRATION FEE'
 DESCRIPTION = 'DESCRIPTION'
+TOT_ASSESSMENT = 'TOT_ASSESSMENT'
 
 LAST_YEAR = datetime.datetime.now().year - 1
 
@@ -609,6 +611,13 @@ def get_admin_fee(benefit, rate=10, max_fee=27.5):
     else:
         return 0
 
+def get_penalty(year, assessment):
+    if assessment is None:
+        assessment = 0
+    if year < LAST_YEAR:
+        return (((LAST_YEAR - year) * datetime.datetime.now().month) * 0.01) * assessment
+    return 0
+
 class Geodatabase(object):
     """Wrapper for Little River District Geodatabase
 
@@ -639,6 +648,9 @@ class Geodatabase(object):
 
         district -- full path to the Little River District Boundary
     """
+    where_all_or_nothing = "COUNTY IN {}".format(tuple(str(c) for c in ALL_OR_NOTHING_COUNTIES))
+    where_total_of_parcels = "COUNTY NOT IN {}".format(tuple(str(c) for c in ALL_OR_NOTHING_COUNTIES))
+    no_flags = "FLAG = 'N'"
     par_summary_table_name = 'Parcel_Assessment_Summary'
     par_breakdown_table_name = 'Parcel_Assessment_Breakdown'
     flag_table_name = 'Breakdown_Flags'
@@ -671,32 +683,142 @@ class Geodatabase(object):
         self.current_ws = self.path
         arcpy.env.workspace = self.path
 
-    def calculate_admin_fee(self, rate=10, max_fee=27.5):
+    def get_admin_fees(self, rate=10, max_fee=27.5):
+        """forms JSON structure for admin fees
+
+        Total of Parcels example:
+
+            {
+                "code": "GARS01",
+                "type": "TOTAL_OF_PARCELS",
+                "total_assessment": 21,
+                "total_bill": 34.15,
+                "penalty": 6.65,
+                "excess": 0,
+                "admin_fees": [{
+                    "pin": null,
+                    "assessment": null,
+                    "admin_fee": 6.50
+                }]
+            }
+
+        All or Nothing Example:
+
+            {
+                "code": "GARS01",
+                "type": "ALL_OR_NOTHING",
+                "total_assessment": 21,
+                "total_bill": 61.15,
+                "penalty": 6.65,
+                "excess": 0,
+                "admin_fees": [{
+                    "pin": "23-03.0-05-00.0-00-05-00000",
+                    "assessment": 17.80,
+                    "admin_fee": 9.70
+                }, {
+                    "pin": "23-03.0-05-00.0-00-05-00000",
+                    "assessment": 3.20,
+                    "admin_fee": 24.30
+                }]
+            }
+        """
+        def from_assessment(assessment, max_fee=max_fee):
+            adm = max_fee - (assessment if assessment != None else 0)
+            if adm > 0:
+                return adm
+            return 0
+
+        admin_fees = {}
+
+        # get all owner codes for ALL_OR_NOTHING
+        all_tv = arcpy.management.MakeTableView(self.summary_table, 'all_tv', ' AND '.join([self.no_flags, self.where_all_or_nothing]))
+
+        stats = [['TOT_ASSESSMENT', 'SUM']]
+
+        # do summary stats for all or nothing
+        alln_summary = r'in_memory\all_or_nothing'
+        arcpy.analysis.Statistics(all_tv, alln_summary, stats, 'OWNER_CODE')
+
+        with arcpy.da.SearchCursor(alln_summary, ['OWNER_CODE', 'SUM_TOT_ASSESSMENT']) as rows:
+            for r in rows:
+                dct = {'code': r[0],
+                       'type': ALL_OR_NOTHING,
+                       'total_assessment': r[1] or 0,
+                       'total_bill': r[1] or 0,
+                       'total_admin_fee': 0,
+                       'penalty': 0,
+                       'excess': 0,
+                       'assessments': []
+                }
+                admin_fees[r[0]] = dct
+
+        # get all owner codes for TOTAL_OF_PARCELS
+        all_top = arcpy.management.MakeTableView(self.summary_table, 'all_top', ' AND '.join([self.no_flags, self.where_total_of_parcels]))
+
+        # do summary stats for all or nothing
+        top_summary = r'in_memory\top_summary'
+        arcpy.analysis.Statistics(all_top, top_summary, stats, 'OWNER_CODE')
+
+        with arcpy.da.SearchCursor(top_summary, ['OWNER_CODE', 'SUM_TOT_ASSESSMENT']) as rows:
+            for r in rows:
+                dct = {'code': r[0],
+                       'type': TOTAL_OF_PARCELS,
+                       'total_assessment': r[1] or 0,
+                       'total_bill': r[1] or 0,
+                       'total_admin_fee': from_assessment(r[1], max_fee),
+                       'penalty': 0,
+                       'excess': 0,
+                       'assessments': [{'pin': None,
+                                       'assessment': None,
+                                       'admin_fee': from_assessment(r[1], max_fee)
+                                       }]
+                }
+                admin_fees[r[0]] = dct
+
+        # now grab assessment parcels for ALL_OR_NOTHING
+        with arcpy.da.SearchCursor(all_tv, ['OWNER_CODE', 'TOT_ASSESSMENT', 'TOT_ADMIN_FEE', 'PARCEL_ID', 'YEAR']) as rows:
+            for r in rows:
+                if r[0] in admin_fees:
+                    penalty = get_penalty(r[4], r[1])
+                    admin_fees[r[0]]['assessments'].append({'pin': r[3], 'assessment': r[1] or 0, 'admin_fee': r[2] or 0})
+                    admin_fees[r[0]]['total_admin_fee'] += r[2] or 0
+                    admin_fees[r[0]]['penalty'] += penalty
+                    admin_fees[r[0]]['total_bill'] += (r[2] + penalty)
+
+        # now do TOTAL_OF_PARCELS
+        with arcpy.da.SearchCursor(all_top, ['OWNER_CODE', 'TOT_ASSESSMENT', 'YEAR']) as rows:
+            for r in rows:
+                if r[0] in admin_fees:
+                    penalty = get_penalty(r[2], r[1])
+
+                    admin_fees[r[0]]['penalty'] += penalty
+                    admin_fees[r[0]]['total_bill'] += penalty
+        return admin_fees
+
+    def calculate_admin_fee(self, rate=10, method=TOTAL_OF_PARCELS, max_fee=27.5,):
         """calculates admin fee for all parcels
 
         rate -- tax rate for current tax year
+        method -- admin fee calculation method, default is TOTAL_OF_PARCELS
+            options: TOTAL_OF_PARCELS|ALL_OR_NOTHING
+
+        max_fee -- maximum admin fee, default is 27.50
         """
+
         sumd = {}
-        with UpdateCursor(self.summary_table, [PIN, PARCEL_ID, TOT_BENEFIT, TOT_ADMIN_FEE]) as rows:
+        with UpdateCursor(self.summary_table, [PIN, PARCEL_ID, TOT_BENEFIT, TOT_ADMIN_FEE, TOT_ASSESSMENT], self.where_all_or_nothing) as rows:
             for r in rows:
                 if r[2] and r[0]:
                     r[3] = get_admin_fee(r[2], rate, max_fee)
+                    r[4] = r[2] * (rate * 0.01)
                     rows.updateRow(r)
-                    sumd[r[0]] = dict(zip(['pid', 'benefit', 'fee'], r[1:]))
-
-        sumd = munch.munchify(sumd)
 
         # query admin fee records and upate the fee
-        where = "{} = '{}'".format(DESCRIPTION, ADMINISTRATION_FEE)
-        fields = [PIN, 'COUNTY_MAP_NUMBER','ASSESSMENT']
+        fields = [PIN, 'COUNTY_MAP_NUMBER', 'BENEFIT', 'ASSESSMENT']
         with UpdateCursor(self.breakdown_table, fields, where_clause=where) as rows:
             for r in rows:
-                if r[0] in sumd:
-                    # fix parcel id?
-                    #r[1] = sumd[r[0]]
-                    r[2] = sumd[r[0]].get('fee', 0)
-                    rows.updateRow(r)
-                    del sumd[r[0]]
+                r[3] = r[2] * (rate * 0.01)
+                rows.updateRow(r)
 
         Message('Updated Admin Fees')
 
@@ -801,6 +923,11 @@ class Geodatabase(object):
         """gets a list of owner codes"""
         with arcpy.da.SearchCursor(self.breakdown_table, ['CODE']) as rows:
            return sorted(list(set(r[0] for r in rows if r[0])))
+
+    def getOwnerCodesWithCounty(self):
+        """get a dict with owner codes and their associated county"""
+        with arcpy.da.SearchCursor(self.breakdown_table, ['CODE', 'COUNTY']) as rows:
+           return {r[0]: r[1] for r in rows}
 
     def getParcelPath(self, name, pType='lr'):
         """retrieve full path to parcel data set by county name

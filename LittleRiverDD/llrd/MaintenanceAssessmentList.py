@@ -32,6 +32,7 @@ PID = 'COUNTY MAP NUMBER'
 ACRES = 'ACRES'
 BENEFIT = 'BENEFIT'
 ASSESSMENT = 'ASSESSMENT'
+ADMIN_FEE = 'ADMIN FEE'
 EXEMPT = 'E'
 DATE_PAID = 'DATE PAID'
 
@@ -87,6 +88,7 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
                  ACRES: styleCurrency,
                  BENEFIT: styleCurrency,
                  ASSESSMENT: styleCurrency,
+                 ADMIN_FEE: styleCurrency,
                  DEFAULT_STYLE: defaultStyle
         }
 
@@ -94,13 +96,14 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
     yearBreakDict = {ACRES: yearBreak,
                      BENEFIT: yearBreak,
                      ASSESSMENT: yearBreak,
+                     ADMIN_FEE: yearBreak
         }
 
     # section overwrite style dict
     sectionBreakDict = {PID: styleHeadersRight}
 
     # column widths
-    widths = (8, 35, 8, 9, 30, 20, 8, 8, 10, 3, 8)
+    widths = (8, 35, 8, 9, 30, 20, 8, 8, 10, 10, 3, 8)
 
     # **************************************************************************************
 
@@ -109,7 +112,7 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
         out_excel = os.path.splitext(out_excel)[0] + '.xls'
 
     headers = [CODE, LANDOWNER, SECTION, SEQUENCE, DESCRIPTION,
-               PID, ACRES, BENEFIT, ASSESSMENT, EXEMPT, DATE_PAID]
+               PID, ACRES, BENEFIT, ASSESSMENT, ADMIN_FEE, EXEMPT, DATE_PAID]
 
     col_widths = dict(zip(range(len(headers)), widths))
 
@@ -122,8 +125,8 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
     ws.ws.write(0, 0, Formula('TODAY()'), styleDate)
     ws.ws.write_merge(0, 0, 1, 7, 'THE LITTLE RIVER DRAINAGE DISTRICT', style=styleHeaders)
     ws.ws.write_merge(1, 1, 1, 7, 'MAINTENANCE ASSESSMENT LIST', style=styleHeaders)
-    ws.ws.write_merge(0, 0, 8, 10, '{} {}'.format(year, ' '.join(county.upper().split()[:-1])), style=styleHeaders)
-    ws.ws.write_merge(1, 1, 8, 10, 'RATE    %.1f' %float(rate) + '%', style=styleHeaders)
+    ws.ws.write_merge(0, 0, 9, 11, '{} {}'.format(year, ' '.join(county.upper().split()[:-1])), style=styleHeaders)
+    ws.ws.write_merge(1, 1, 9, 11, 'RATE    %.1f' %float(rate) + '%', style=styleHeaders)
 
     # form sql clause, make sure it is sorted by year at minimum
     sql = (None, None)
@@ -155,22 +158,36 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
     date_ind = fields.index(DATE_PAID_GIS)
     desc_ind = fields.index(DESCRIPTION_GIS)
     seq_ind = fields.index(SEQUENCE_GIS)
+    admin_ind = headers.index(ADMIN_FEE)
 
     # alter initial where clause to include county
     hide_admin = " AND {} <> '{}'".format(DESCRIPTION_GIS, ADMINISTRATIVE_FEE)
     null_secs = " AND {} NOT LIKE '%99%'".format(SEC_TWN_RNG_GIS)
     where_clause = ' AND '.join(filter(None, ["{} = '{}'".format(COUNTY_GIS, county.upper()), where_clause, no_flag]))
 
+    # admin fees
+    #
+    # recalculate admin fees if necessary
+    #
+    if int(rate) != utils.getConfig().get('rate'):
+        gdb.calculate_admin_fee(rate)
+
+    # grab benefits from summary table
+    admin_fees = {}
+    summary_fields = ['PIN', 'TOT_ADMIN_FEE']
+    with arcpy.da.SearchCursor(gdb.summary_table, summary_fields, "{} = '{}'".format(COUNTY_GIS, county.upper())) as rows:
+        for r in rows:
+            admin_fees = {r[0]: r[1] for r in rows if r[0]}
+
     # get sorted section-township-range
-    utils.Message(fields)
-    tv = arcpy.management.MakeTableView(gdb.breakdown_table, 'subset', where_clause + null_secs + hide_admin)
+    tv = arcpy.management.MakeTableView(gdb.breakdown_table, 'subset', where_clause + hide_admin + null_secs)
     with arcpy.da.SearchCursor(tv, fields, where_clause= where_clause + null_secs) as rows:
         sorted_plss = filter(None, sorted(list(set(r[sec_ind] for r in rows))))
     utils.Message('Cycling through {} Sections...'.format(len(sorted_plss)))
 
     # now add rows to spreadsheet
     all_pins = {}
-    grand_tots = {ACRES: [], BENEFIT: [], ASSESSMENT: []}
+    grand_tots = {ACRES: [], BENEFIT: [], ASSESSMENT: [], ADMIN_FEE: []}
     for plss in sorted_plss:
         start_index_row = ws._currentRowIndex + 1
 
@@ -180,16 +197,11 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
         with arcpy.da.SearchCursor(gdb.breakdown_table, fields + [PIN], where_clause=where, sql_clause=sql) as rows:
             for r in rows:
 
-                # for some reason the cursor will not fetch records if this is added to
-                #  the where clause...Bug???
-                if r[desc_ind] != ADMINISTRATIVE_FEE:
-                    # validate date paid
-                    vals = list(r)[:len(fields)]
+                vals = list(r)[:len(fields)]
+                vals.insert(admin_ind, admin_fees.get(r[-1], 0))
 
-##                    if not vals[date_ind]:
-##                        vals[date_ind] = default_date_paid
-                    ws.addRow(*vals)
-                    all_pins[r[-1]] = vals
+                ws.addRow(*vals)
+                all_pins[r[-1]] = vals
 
         # add blank row with dashed style
         ws.addRow(styleDict=yearBreakDict)
@@ -197,62 +209,16 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
         # now add totals
         totals = {h:Formula('SUM({col}{st}:{col}{en})'.format(col=ascii_uppercase[i],
                 st=start_index_row, en=ws._currentRowIndex-1))
-                for i,h in enumerate(headers) if i in range(acre_ind, exempt_ind)}
+                for i,h in enumerate(headers) if i in range(acre_ind, admin_ind+1)}
 
         totals[PID] = 'TOTAL for Section {}'.format(plss)
         totals['styleDict'] = sectionBreakDict
         ws.addRow(**totals)
-        for k in [ACRES, BENEFIT, ASSESSMENT]:
+        for k in [ACRES, BENEFIT, ASSESSMENT, ADMIN_FEE]:
             grand_tots[k].append(totals[k])
 
         # add another blank row
         ws._currentRowIndex += 1
-
-    # now do admin fees
-    #
-    # recalculate admin fees if necessary
-    #
-    if int(rate) != utils.getConfig().get('rate'):
-        gdb.calculate_admin_fee(rate)
-
-    # grab benefits from summary table
-    admin_fees = {}
-    summary_fields = ['PIN', 'TOT_ADMIN_FEE', 'PARCEL_ID', 'DATE_PAID']
-    with arcpy.da.SearchCursor(gdb.summary_table, summary_fields) as rows:
-        for r in rows:
-            if r[0] in all_pins and r[1]:
-                vals = all_pins[r[0]]
-                new_vals = vals[:]
-                new_vals[desc_ind] = ADMINISTRATIVE_FEE
-                new_vals[seq_ind] = '9999'
-                new_vals[acre_ind] = 0
-                new_vals[benefit_ind] = 0
-                new_vals[assessment_ind] = r[1]
-                admin_fees[r[0]] = new_vals
-
-    start_index_row = ws._currentRowIndex + 1
-    for pin, vals in sorted(admin_fees.iteritems()):
-        ws.addRow(*vals)
-
-    # add blank row with dashed style
-    ws.addRow(styleDict=yearBreakDict)
-
-    # add another blank row
-    ws._currentRowIndex += 1
-
-    # now add grand totals
-    totals = {h:Formula('SUM({col}{st}:{col}{en})'.format(col=ascii_uppercase[i],
-            st=start_index_row, en=ws._currentRowIndex-1))
-            for i,h in enumerate(headers) if i in range(acre_ind, exempt_ind)}
-
-    totals[PID] = 'TOTAL for all Admin Fees'
-    totals['styleDict'] = sectionBreakDict
-    ws.addRow(**totals)
-    for k in [ACRES, BENEFIT, ASSESSMENT]:
-            grand_tots[k].append(totals[k])
-
-    # add another blank row
-    ws._currentRowIndex += 1
 
     # now add grand totals
     totals = {k: Formula(' + '.join([f.text() for f in v])) for k,v in grand_tots.iteritems()}
@@ -283,7 +249,6 @@ def generateMAL(out_excel, county, rate=10.0, year=2015, where_clause='', sort_b
     ws.PageSetup.PrintTitleRows = '$1:$4'
     wb.Save()
     wb.Close()
-    os.startfile(out_excel)
     xl.Application.Quit()
     del xl
 

@@ -10,6 +10,7 @@ from . import OwnerReceipt
 from . import flags
 from . import download
 from . import contours
+from ._defaults import *
 reload(utils)
 reload(OwnerReceipt)
 reload(AbstractOfReceipts)
@@ -18,6 +19,7 @@ reload(proxy)
 reload(flags)
 reload(download)
 reload(contours)
+import pythonaddins
 
 class Toolbox(object):
     def __init__(self):
@@ -500,14 +502,16 @@ class OwnerReceiptsCountyTool(object):
         if not parameters[2].altered:
             parameters[2].value = utils.LAST_YEAR
 
-        if not parameters[4].altered:
-            parameters[4].value = OwnerReceipt.DEFAULT_MAIL_NAME
+        if parameters[1].altered:
+            county = parameters[1].valueAsText.upper()
+##            if not parameters[4].altered:
+            parameters[4].value = COLLECTORS[county]['name']
 
-        if not parameters[5].altered:
-            parameters[5].value = OwnerReceipt.DEFAULT_MAIL_ADDR
+##            if not parameters[5].altered:
+            parameters[5].value = COLLECTORS[county]['address']
 
-        if not parameters[6].altered:
-            parameters[6].value = OwnerReceipt.DEFAULT_MAIL_CSZ
+##            if not parameters[6].altered:
+            parameters[6].value = COLLECTORS[county]['csz']
 
         if not parameters[7].altered:
             parameters[7].value = False
@@ -533,6 +537,7 @@ class OwnerReceiptsCodeTool(object):
         self.category = 'Reports'
         self.canRunInBackground = False
         self.gdb = utils.Geodatabase()
+        self.owner_dict = self.gdb.getOwnerCodesWithCounty()
 
     def getParameterInfo(self):
         """Define parameter definitions"""
@@ -585,7 +590,6 @@ class OwnerReceiptsCodeTool(object):
             direction="Input")
 
 
-
         return [output, code, year, where, name, addr, csz, add_maps]
 
     def isLicensed(self):
@@ -596,19 +600,18 @@ class OwnerReceiptsCodeTool(object):
         """Modify the values and properties of parameters before internal
         validation is performed.  This method is called whenever a parameter
         has been changed."""
-        if not parameters[1].hasBeenValidated and not parameters[1].altered:
-            parameters[1].filter.list = self.gdb.getOwnerCodes()
+        if not parameters[1].altered:
+            codes = filter(None, sorted(self.owner_dict.keys()))
+            parameters[1].filter.list = codes
         if not parameters[2].altered:
             parameters[2].value = utils.LAST_YEAR
 
-        if not parameters[4].altered:
-            parameters[4].value = OwnerReceipt.DEFAULT_MAIL_NAME
+        if parameters[1].altered:
+            county = self.owner_dict[parameters[1].valueAsText]
 
-        if not parameters[5].altered:
-            parameters[5].value = OwnerReceipt.DEFAULT_MAIL_ADDR
-
-        if not parameters[6].altered:
-            parameters[6].value = OwnerReceipt.DEFAULT_MAIL_CSZ
+            parameters[4].value = COLLECTORS[county]['name']
+            parameters[5].value = COLLECTORS[county]['address']
+            parameters[6].value = COLLECTORS[county]['csz']
 
         if not parameters[7].altered:
             parameters[7].value = False
@@ -678,6 +681,43 @@ class CreateFlagTable(object):
         args = [p.valueAsText for p in parameters]
         utils.passArgs(flags.getFlags, args)
 ##        flags.getFlags(*args)
+
+class CreateArchive(object):
+    def __init__(self):
+        """Define the tool (tool name is the name of the class)."""
+        self.label = "Create Archive"
+        self.description = ""
+        self.category = 'Backups'
+        self.canRunInBackground = False
+
+    def getParameterInfo(self):
+        """Define parameter definitions"""
+        archive_year = arcpy.Parameter(displayName="Archive Year",
+            name="archive_year",
+            datatype="LONG",
+            parameterType="Optional",
+            direction="Input")
+
+        return [archive]
+
+    def isLicensed(self):
+        """Set whether tool is licensed to execute."""
+        return True
+
+    def updateParameters(self, parameters):
+        """Modify the values and properties of parameters before internal
+        validation is performed.  This method is called whenever a parameter
+        has been changed."""
+        return
+
+    def updateMessages(self, parameters):
+        """Modify the messages created by internal validation for each tool
+        parameter.  This method is called after internal validation."""
+        return
+
+    def execute(self, parameters, messages):
+        """The source code of the tool."""
+        utils.passArgs(download.parcelDownload, [])
 
 class DownloadParcels(object):
     def __init__(self):
