@@ -46,7 +46,7 @@ PIN = 'PIN'
 TOT_BENEFIT = 'TOT_BENEFIT'
 SEC_TWN_RNG = 'SEC_TWN_RNG'
 TOT_ADMIN_FEE = 'TOT_ADMIN_FEE'
-ADMINISTRATION_FEE = 'ADMINISTRATION FEE'
+ADMINISTRATION_FEE = 'ADMINISTRATIVE FEE'
 DESCRIPTION = 'DESCRIPTION'
 TOT_ASSESSMENT = 'TOT_ASSESSMENT'
 
@@ -499,7 +499,7 @@ def writeConfig(**kwargs):
     """
     d = {k:v for k,v in kwargs.iteritems()}
     with open(CONFIG, 'w') as f:
-        json.dump(d, f, indent=4, sort_keys=True, ensure_ascii=False)
+        json.dump(d, f, indent=2, sort_keys=True, ensure_ascii=False)
 
 def fieldMappings(fcs_in, dico):
     """matches fields for field mapping
@@ -683,7 +683,7 @@ class Geodatabase(object):
         self.current_ws = self.path
         arcpy.env.workspace = self.path
 
-    def get_admin_fees(self, where='', rate=10, max_fee=27.5):
+    def get_admin_fees(self, where=''):
         """forms JSON structure for admin fees
 
         Total of Parcels example:
@@ -722,6 +722,9 @@ class Geodatabase(object):
                 }]
             }
         """
+        config = getConfig()
+        rate = float(config.get('rate', 10))
+        max_fee = float(config.get('admin_fee', 27.5))
         def from_assessment(assessment, max_fee=max_fee):
             adm = max_fee - (assessment if assessment != None else 0)
             if adm > 0:
@@ -803,35 +806,36 @@ class Geodatabase(object):
 
         return admin_fees
 
-    def calculate_admin_fee(self, rate=10, method=TOTAL_OF_PARCELS, max_fee=27.5,):
+    def calculate_admin_fee(self, rate=10.0, max_fee=27.5, force=False):
         """calculates admin fee for all parcels
 
         rate -- tax rate for current tax year
-        method -- admin fee calculation method, default is TOTAL_OF_PARCELS
-            options: TOTAL_OF_PARCELS|ALL_OR_NOTHING
-
         max_fee -- maximum admin fee, default is 27.50
+        force_calculation -- will do calculation no matter what
         """
+        config = getConfig()
+        if not all([float(config.get('rate')) == rate, float(config.get('admin_fee')) == max_fee, force==False]):
+            fields = [PIN, PARCEL_ID, TOT_BENEFIT, TOT_ADMIN_FEE, TOT_ASSESSMENT]
+            with UpdateCursor(self.summary_table, fields, self.where_all_or_nothing) as rows:
+                for r in rows:
+                    if r[2] and r[0]:
+                        r[3] = get_admin_fee(r[2], rate, max_fee)
+                        r[4] = r[2] * (rate * 0.01)
+                        rows.updateRow(r)
 
-        sumd = {}
-        with UpdateCursor(self.summary_table, [PIN, PARCEL_ID, TOT_BENEFIT, TOT_ADMIN_FEE, TOT_ASSESSMENT], self.where_all_or_nothing) as rows:
-            for r in rows:
-                if r[2] and r[0]:
-                    r[3] = get_admin_fee(r[2], rate, max_fee)
-                    r[4] = r[2] * (rate * 0.01)
+            # query admin fee records and upate the fee
+            fields = [PIN, 'COUNTY_MAP_NUMBER', 'BENEFIT', 'ASSESSMENT']
+            with UpdateCursor(self.breakdown_table, fields) as rows:
+                for r in rows:
+                    r[3] = r[2] * (rate * 0.01)
                     rows.updateRow(r)
 
-        # query admin fee records and upate the fee
-        fields = [PIN, 'COUNTY_MAP_NUMBER', 'BENEFIT', 'ASSESSMENT']
-        with UpdateCursor(self.breakdown_table, fields, where_clause=where) as rows:
-            for r in rows:
-                r[3] = r[2] * (rate * 0.01)
-                rows.updateRow(r)
+            Message('Updated Admin Fees')
 
-        Message('Updated Admin Fees')
-
-        # update configuration
-        updateConfig(rate=rate)
+            # update configuration
+            updateConfig(rate=rate)
+        else:
+            Message('Rates have not changed, skipped recalculating admin fee')
         return
 
     def create_archive(year=LAST_YEAR):
@@ -1219,7 +1223,7 @@ class Geodatabase(object):
             county_where = "COUNTY = '{}'".format(county)
         else:
             county_where = ''
-        where = 'AND '.join(filter(lambda w: w not in ('', None, '#'), [county_where, where_clause]))
+        where = ' AND '.join(filter(lambda w: w not in ('', None, '#'), [county_where, where_clause]))
         own_root_fields = ['CODE', 'LANDOWNER_NAME', 'COUNTY']
         with arcpy.da.SearchCursor(self.breakdown_table, own_root_fields, where) as rows:
             owners = {r[0]: {'code': r[0],
@@ -1254,22 +1258,49 @@ class Geodatabase(object):
             for r in rows:
                 if r[-1] in owners:
                     ad = dict(zip(match_flds, r[:-2]))
-                    ad['DESCRIPTION & MAP NUMBER'] = '\r\n'.join([s if s else '' for s in [r[-2], r[0]]])
+                    ad['DESCRIPTION & MAP NUMBER'] = '\r\n'.join([s or '' for s in [r[-2], r[0]]])
                     owners[r[-1]]['assessments'].append(ad)
 
-        # get all admin fees from summary table
-        with arcpy.da.SearchCursor(self.summary_table, ['OWNER_CODE', 'PARCEL_ID', 'TOT_ADMIN_FEE'], county_where) as rows:
-            for r in rows:
-                if r[0] in owners and r[2]:
-                    owners[r[0]]['assessments'].append({
-                      "SN-TP-RG": "99-99-99",
-                      "SEQ": "99999",
-                      "DESCRIPTION & MAP NUMBER": "ADMINISTRATIVE FEE\r\n{}".format(r[1]),
-                      "ACRES": 0,
-                      "BENEFITS": 0,
-                      "DRAINAGE FEE AMOUNT": r[2],
-                      "pin": r[1]
+        # get admin fees
+        admin_fees = self.get_admin_fees(county_where)
+        for code, atts in admin_fees.iteritems():
+            if code in owners:
+##                if atts['type'] == TOTAL_OF_PARCELS:
+##                    owners[code]['assessments'].append({
+##                      "SN-TP-RG": "99-99-99",
+##                      "SEQ": "99999",
+##                      "DESCRIPTION & MAP NUMBER": "ADMINISTRATIVE FEE",
+##                      "ACRES": 0,
+##                      "BENEFITS": 0,
+##                      "DRAINAGE FEE AMOUNT": atts['total_admin_fee'],
+##                      "pin": None
+##                    })
+##
+##                else:
+                for assessment in atts['assessments']:
+                    owners[code]['assessments'].append({
+                        "SN-TP-RG": "99-99-99",
+                        "SEQ": "99999",
+                        "DESCRIPTION & MAP NUMBER": "{}\r\n{}".format(ADMINISTRATION_FEE, assessment['pin'] or ''),
+                        "ACRES": 0,
+                        "BENEFITS": 0,
+                        "DRAINAGE FEE AMOUNT": atts['total_admin_fee'],
+                        "pin": getPIN(assessment['pin'])
                     })
+
+##        # get all admin fees from summary table
+##        with arcpy.da.SearchCursor(self.summary_table, ['OWNER_CODE', 'PARCEL_ID', 'TOT_ADMIN_FEE'], county_where) as rows:
+##            for r in rows:
+##                if r[0] in owners and r[2]:
+##                    owners[r[0]]['assessments'].append({
+##                      "SN-TP-RG": "99-99-99",
+##                      "SEQ": "99999",
+##                      "DESCRIPTION & MAP NUMBER": "ADMINISTRATIVE FEE\r\n{}".format(r[1]),
+##                      "ACRES": 0,
+##                      "BENEFITS": 0,
+##                      "DRAINAGE FEE AMOUNT": r[2],
+##                      "pin": r[1]
+##                    })
 
         return munch.munchify(owners)
 

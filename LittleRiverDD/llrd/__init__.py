@@ -50,7 +50,19 @@ class SetupConfigFile(object):
             parameterType="Required",
             direction="Input")
 
-        return [gdb]
+        rate = arcpy.Parameter(displayName="Tax Rate",
+            name="rate",
+            datatype="Double",
+            parameterType="Required",
+            direction="Input")
+
+        admin_fee = arcpy.Parameter(displayName="Admin Fee",
+            name="admin_fee",
+            datatype="Double",
+            parameterType="Required",
+            direction="Input")
+
+        return [gdb, rate, admin_fee]
 
     def isLicensed(self):
         """Set whether tool is licensed to execute."""
@@ -61,6 +73,12 @@ class SetupConfigFile(object):
         validation is performed.  This method is called whenever a parameter
         has been changed."""
         parameters[0].filter.list = ['LocalDatabase', 'RemoteDatabase']
+        parameters[1].filter.type = 'Range'
+        parameters[1].filter.list = [1,100]
+        if not parameters[1].altered:
+            parameters[1].value = 10
+        if not parameters[2].altered:
+            parameters[2].value = 27.50
         return
 
     def updateMessages(self, parameters):
@@ -234,7 +252,7 @@ class MaintenanceAssessmentListTool(object):
         parameters[2].filter.type = 'Range'
         parameters[2].filter.list = [1.0, 100.0]
         if not parameters[2].value:
-            parameters[2].value = 9.0
+            parameters[2].value = float(utils.getConfig().get('rate', 10))
 
         cur_year = datetime.datetime.now().year
         parameters[3].filter.list = range(cur_year-5, cur_year + 5)
@@ -335,7 +353,7 @@ class MaintenanceAssessmentListTool_CS(object):
         parameters[2].filter.type = 'Range'
         parameters[2].filter.list = [1.0, 100.0]
         if not parameters[2].value:
-            parameters[2].value = 9.0
+            parameters[2].value = float(utils.getConfig().get('rate', 10))
 
         cur_year = datetime.datetime.now().year
         parameters[3].filter.list = range(cur_year-5, cur_year + 5)

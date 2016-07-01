@@ -12,6 +12,7 @@ from .excel import *
 from .excel_styles import *
 from . import utils
 from .mailing import avery5160
+from ._defaults import *
 import os
 import arcpy
 import sys
@@ -334,6 +335,7 @@ def generateOwnerReceiptsForCounty(out_folder, county, year=utils.LAST_YEAR, whe
 
     """
     gdb = utils.Geodatabase()
+    where_clause = ' AND '.join(filter(None, [where_clause, "FLAG = 'N'"]))
     owners = Owners(gdb.getOwnerReceiptDict(county, year, where_clause))
 
     # mxd for reports
@@ -355,6 +357,10 @@ def generateOwnerReceiptsForCounty(out_folder, county, year=utils.LAST_YEAR, whe
         out_xls = generateOwnerReceipt(out_folder, owner, mail_to_name, mail_to_addr, mail_to_csz, add_map_reports, mxd)[0]
         addresses.append([owner.name, owner.address, owner.csz])
         xls_files.append(out_xls)
+
+###        # for testing, just get a sample of x
+###        if i > 25:
+###            break
 
         if not i % 100 and i > 1:
             utils.Message('Created reports {}-{} of {}...'.format(i - 99, i, len(owners)))
@@ -487,10 +493,33 @@ def generateOwnerReceipt(out_folder, owner_json, mail_to_name=DEFAULT_MAIL_NAME,
     ws.ws.write(ws.header_line_no, drainage_ind, DRAINAGE_FEE, style=styleHeadersRight2)
 
     # add rows
+##    pins = []
+    admin_fee = float(utils.getConfig().get('admin_fee', 27.5))
+    start_ind = ws._currentRowIndex + 1
+    col_letter = ascii_uppercase[headers.index(DRAINAGE_FEE)]
     for assessment in owner_json.assessments:
         assessment[YEAR] = owner_json.year
 
-        ws.addRow(**assessment)
+        if assessment[DRAINAGE_FEE]:
+
+##            # don't add null or values of 0
+##            if utils.ADMINISTRATION_FEE not in assessment[DESCRIPTION]:
+##                pins.append(assessment['pin'])
+
+            if utils.ADMINISTRATION_FEE in assessment[DESCRIPTION]:
+                if owner_json.county not in ALL_OR_NOTHING_COUNTIES:
+                    sumf = 'SUM({c}{st}:{c}{ri})'.format(c=col_letter,st=start_ind,ri=ws._currentRowIndex)
+                    formula = 'IF({a} - {s} > 0, {a} - {s}, 0)'.format(a=admin_fee, s=sumf)
+                    assessment[DRAINAGE_FEE] = Formula(formula)
+##                    add_rec = True
+##                else:
+##                    if assessment['pin'] in pins:
+##                        add_rec = True
+##                    else:
+##                        add_rec = False
+
+##            if add_rec:
+            ws.addRow(**assessment)
 
     # add empty row and total row
     ws.addRow(styleDict=emptyRowStyleDict)

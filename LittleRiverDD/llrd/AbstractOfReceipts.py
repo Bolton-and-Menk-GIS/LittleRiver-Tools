@@ -145,19 +145,22 @@ def generateAOR(out_excel, county, where_clause=None, sort_by=utils.OWNER_CODE):
 
     # iterate through summary table and make sure all years have been populated
     gdb = utils.Geodatabase()
-    all_years = []
-    with utils.UpdateCursor(gdb.summary_table, [YEAR_FC, DATE_PAID_FC], where_clause) as rows:
-        for r in rows:
-            if not r[0]:
-                r[0] = year
+    with arcpy.da.SearchCursor(gdb.summary_table, [YEAR_FC], where_clause) as rows:
+        all_years = list(set(r[0] for r in rows))
 
-            if not isinstance(r[1], datetime.datetime):
-                r[1] = nye_prior_year
-
-            rows.updateRow(r)
-
-            if r[0] not in all_years:
-                all_years.append(r[0])
+##    all_years = []
+##    with utils.UpdateCursor(gdb.summary_table, [YEAR_FC, DATE_PAID_FC], where_clause) as rows:
+##        for r in rows:
+##            if not r[0]:
+##                r[0] = year
+##
+##            if not isinstance(r[1], datetime.datetime):
+##                r[1] = nye_prior_year
+##
+##            rows.updateRow(r)
+##
+##            if r[0] not in all_years:
+##                all_years.append(r[0])
 
     # set up where clause
     for yr in sorted(all_years):
