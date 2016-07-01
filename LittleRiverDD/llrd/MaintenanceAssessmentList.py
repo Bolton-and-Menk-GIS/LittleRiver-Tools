@@ -53,7 +53,7 @@ COUNTY_GIS = 'COUNTY'
 PIN = 'PIN'
 
 # defaults and constants
-DEFAULT_SORT = ';'.join([CODE_GIS, DESCRIPTION_GIS])
+DEFAULT_SORT = ';'.join([SEC_TWN_RNG_GIS, CODE_GIS, DESCRIPTION_GIS])
 ADMINISTRATIVE_FEE = 'ADMINISTRATIVE FEE'
 no_flag = "FLAG = 'N'"
 
@@ -145,7 +145,7 @@ def generateMAL_AON(out_excel, county, rate=10.0, year=2015, where_clause='', so
 
     # make sure it is sorted by Section-Township-Range at minimum
     sql2 = (None, 'ORDER BY {}'.format(', '.join(sort_by.split(';') if isinstance(sort_by, basestring) else sort_by)))
-    sort_fields = [SEC_TWN_RNG_GIS] + sort_by.split(';') if isinstance(sort_by, basestring) else sort_by
+    sort_fields = sort_by.split(';') if isinstance(sort_by, basestring) else sort_by
     if sort_by:
         sql = (None, 'ORDER BY {}'.format(', '.join(sort_fields)))
     print sql
@@ -155,6 +155,7 @@ def generateMAL_AON(out_excel, county, rate=10.0, year=2015, where_clause='', so
     default_date_paid = datetime.datetime(int(year), 12, 31)
 
     # reference Geodatabase and fields
+    county_where = "{} = '{}'".format(COUNTY_GIS, county.upper())
     gdb = utils.Geodatabase()
     fields = [CODE_GIS, LANDOWNER_GIS, SEC_TWN_RNG_GIS, SEQUENCE_GIS, DESCRIPTION_GIS,
              PID_GIS, ACRES_GIS, BENEFIT_GIS, ASSESSMENT_GIS, EXEMPT_GIS, DATE_PAID_GIS]
@@ -175,7 +176,7 @@ def generateMAL_AON(out_excel, county, rate=10.0, year=2015, where_clause='', so
     # alter initial where clause to include county
     hide_admin = " AND {} <> '{}'".format(DESCRIPTION_GIS, ADMINISTRATIVE_FEE)
     null_secs = " AND {} NOT LIKE '%99%'".format(SEC_TWN_RNG_GIS)
-    where_clause = ' AND '.join(filter(None, ["{} = '{}'".format(COUNTY_GIS, county.upper()), where_clause, no_flag]))
+    where_clause = ' AND '.join(filter(None, [county_where, where_clause, no_flag]))
 
     # admin fees
     #
@@ -185,7 +186,8 @@ def generateMAL_AON(out_excel, county, rate=10.0, year=2015, where_clause='', so
         gdb.calculate_admin_fee(rate)
 
     # get sorted section-township-range
-    tv = arcpy.management.MakeTableView(gdb.breakdown_table, 'subset', where_clause + hide_admin + null_secs)
+    tv = arcpy.management.MakeTableView(gdb.breakdown_table, 'subset', where_clause +  null_secs)
+    print int(arcpy.management.GetCount(tv).getOutput(0))
     with arcpy.da.SearchCursor(tv, fields, where_clause= where_clause + null_secs) as rows:
         sorted_plss = filter(None, sorted(list(set(r[sec_ind] for r in rows))))
     utils.Message('Cycling through {} Sections...'.format(len(sorted_plss)))
@@ -200,14 +202,16 @@ def generateMAL_AON(out_excel, county, rate=10.0, year=2015, where_clause='', so
         where = ' AND '.join(filter(None, [where_clause, "{} = '{}'".format(SEC_TWN_RNG_GIS, plss)]))
 
         with arcpy.da.SearchCursor(gdb.breakdown_table, fields + [PIN], where_clause=where, sql_clause=sql) as rows:
+            cnt = 0
             for r in rows:
 
                 vals = list(r)[:len(fields)]
-                vals[headers.index(ASSESSMENT)] = Formula(ASSESSMENT_FORMULA.format(b='%s%s' %(ben_col, ws._currentRowIndex+1), r=(rate * 0.01)))
+                vals[headers.index(ASSESSMENT)] = Formula(ASSESSMENT_FORMULA.format(b='%s%s' %(ben_col, ws._currentRowIndex+1), r=(float(rate) * 0.01)))
                 vals.insert(admin_ind, Formula(ADMIN_FEE_FORMULA.format(a='%s%s' %(assess_col, ws._currentRowIndex+1))))
 
                 ws.addRow(*vals)
                 all_pins[r[-1]] = vals
+                cnt += 1
 
         # add blank row with dashed style
         ws.addRow(styleDict=yearBreakDict)
@@ -257,6 +261,7 @@ def generateMAL_AON(out_excel, county, rate=10.0, year=2015, where_clause='', so
         # silence compatibility message going from xls to xlsx
         wb.DoNotPromptForConvert = True
         wb.CheckCompatibility = False
+        xl.DisplayAlerts = False
     except:
         pass
     wb.Save()
@@ -346,7 +351,6 @@ def generateMAL_TOP(out_excel, county, rate=10.0, year=2015, where_clause='', so
         sql = (None, 'ORDER BY {}'.format(', '.join(sort_fields)))
     print sql
 
-
     # default value for DATE PAID
     default_date_paid = datetime.datetime(int(year), 12, 31)
 
@@ -384,19 +388,36 @@ def generateMAL_TOP(out_excel, county, rate=10.0, year=2015, where_clause='', so
     all_pins = {}
     grand_tots = {ACRES: [], BENEFIT: [], ASSESSMENT: []}
 
-    start_index_row = ws._currentRowIndex + 1
+    for plss in sorted_plss:
+        start_index_row = ws._currentRowIndex + 1
 
-    with arcpy.da.SearchCursor(gdb.breakdown_table, fields + [PIN], where_clause=where_clause, sql_clause=sql) as rows:
-        for r in rows:
+        # form where clause based on this section only
+        where = ' AND '.join(filter(None, [where_clause, "{} = '{}'".format(SEC_TWN_RNG_GIS, plss)]))
+        with arcpy.da.SearchCursor(gdb.breakdown_table, fields + [PIN], where_clause=where, sql_clause=sql) as rows:
+            for r in rows:
 
-            vals = list(r)[:len(fields)]
-            vals[headers.index(ASSESSMENT)] = Formula(ASSESSMENT_FORMULA.format(b='%s%s' %(ben_col, ws._currentRowIndex+1), r=(rate * 0.01)))
+                vals = list(r)[:len(fields)]
+                vals[headers.index(ASSESSMENT)] = Formula(ASSESSMENT_FORMULA.format(b='%s%s' %(ben_col, ws._currentRowIndex+1), r=(rate * 0.01)))
 
-            ws.addRow(*vals)
-            all_pins[r[-1]] = vals
+                ws.addRow(*vals)
+                all_pins[r[-1]] = vals
 
-    # add blank row with dashed style
-    ws.addRow(styleDict=yearBreakDict)
+        # add blank row with dashed style
+        ws.addRow(styleDict=yearBreakDict)
+
+        # now add totals
+        totals = {h:Formula('SUM({col}{st}:{col}{en})'.format(col=ascii_uppercase[i],
+                st=start_index_row, en=ws._currentRowIndex-1))
+                for i,h in enumerate(headers) if i in range(acre_ind, assessment_ind+1)}
+
+        totals[PID] = 'TOTAL for Section {}'.format(plss)
+        totals['styleDict'] = sectionBreakDict
+        ws.addRow(**totals)
+        for k in [ACRES, BENEFIT, ASSESSMENT]:
+            grand_tots[k].append(totals[k])
+
+        # add another blank row
+        ws._currentRowIndex += 1
 
     # now add totals
     totals = {h:Formula('SUM({col}{st}:{col}{en})'.format(col=ascii_uppercase[i],

@@ -1,0 +1,130 @@
+DEBUG:root:
+
+ failed at:	2016-07-01 14:22:54.870000
+
+
+
+User: calebma
+
+Inputs:
+
+	[]
+
+Script:	
+
+
+ERROR:llrd.download:Configuration file does not exist!
+This file must be set up before running tools.
+Traceback (most recent call last):
+  File "C:\gitProjects\LittleRiver-Tools\LittleRiverDD\llrd\utils\__init__.py", line 302, in passArgs
+    f = function(*argv)
+  File "C:\gitProjects\LittleRiver-Tools\LittleRiverDD\llrd\download.py", line 76, in parcelDownload
+    pConfig = utils.getParcelConfig(parConfigFile)
+  File "C:\gitProjects\LittleRiver-Tools\LittleRiverDD\llrd\utils\__init__.py", line 454, in getParcelConfig
+    raise IOError('Configuration file does not exist!\nThis file must be set up before running tools.')
+IOError: Configuration file does not exist!
+This file must be set up before running tools.
+DEBUG:root:
+
+ failed at:	2016-07-01 14:25:23.036000
+
+
+
+User: calebma
+
+Inputs:
+
+	[u'2015']
+
+Script:	
+
+
+ERROR:llrd.utils:unbound method create_archive() must be called with Geodatabase instance as first argument (got unicode instance instead)
+Traceback (most recent call last):
+  File "C:\gitProjects\LittleRiver-Tools\LittleRiverDD\llrd\utils\__init__.py", line 302, in passArgs
+    f = function(*argv)
+TypeError: unbound method create_archive() must be called with Geodatabase instance as first argument (got unicode instance instead)
+DEBUG:root:
+
+ failed at:	2016-07-01 14:26:14.393000
+
+
+
+User: calebma
+
+Inputs:
+
+	[u'2015']
+
+Script:	
+
+
+ERROR:llrd.utils:create_archive() takes at most 1 argument (2 given)
+Traceback (most recent call last):
+  File "C:\gitProjects\LittleRiver-Tools\LittleRiverDD\llrd\utils\__init__.py", line 302, in passArgs
+    f = function(*argv)
+TypeError: create_archive() takes at most 1 argument (2 given)
+DEBUG:root:
+
+ failed at:	2016-07-01 14:27:18.699000
+
+
+
+User: calebma
+
+Inputs:
+
+	[u'2015']
+
+Script:	
+
+
+ERROR:llrd.utils:ERROR 000210: Cannot create output \\arcserver1\GIS\KLINGNER_PR\X11111474\ESRI\Themes\TESTING\Assessment_Archives\Parcel_Assessment_Summary_2015
+Failed to execute (CopyRows).
+Traceback (most recent call last):
+  File "C:\gitProjects\LittleRiver-Tools\LittleRiverDD\llrd\utils\__init__.py", line 302, in passArgs
+    f = function(*argv)
+  File "C:\gitProjects\LittleRiver-Tools\LittleRiverDD\llrd\utils\__init__.py", line 854, in create_archive
+    arcpy.management.CopyRows(table, out_table)
+  File "c:\program files (x86)\arcgis\desktop10.3\arcpy\arcpy\management.py", line 15279, in CopyRows
+    raise e
+ExecuteError: ERROR 000210: Cannot create output \\arcserver1\GIS\KLINGNER_PR\X11111474\ESRI\Themes\TESTING\Assessment_Archives\Parcel_Assessment_Summary_2015
+Failed to execute (CopyRows).
+
+DEBUG:root:
+
+ failed at:	2016-07-01 14:29:39.697000
+
+
+
+User: calebma
+
+Inputs:
+
+	[u'2015']
+
+Script:	
+
+
+ERROR:llrd.utils:ERROR 999999: Error executing function.
+An invalid SQL statement was used.
+An invalid SQL statement was used. [Parcel_Assessment_Summary]
+An invalid SQL statement was used. [SELECT OBJECTID FROM Parcel_Assessment_Summary WHERE PAID = 'N' AND FLAG = 'N]
+The table was not found. [Delinquent_Parcels_2015]
+Failed to execute (TableToTable).
+Traceback (most recent call last):
+  File "C:\gitProjects\LittleRiver-Tools\LittleRiverDD\llrd\utils\__init__.py", line 302, in passArgs
+    f = function(*argv)
+  File "C:\gitProjects\LittleRiver-Tools\LittleRiverDD\llrd\utils\__init__.py", line 861, in create_archive
+    arcpy.conversion.TableToTable(table, archive_gdb, del_tab_name, where)
+  File "c:\program files (x86)\arcgis\desktop10.3\arcpy\arcpy\conversion.py", line 2133, in TableToTable
+    raise e
+ExecuteError: ERROR 999999: Error executing function.
+An invalid SQL statement was used.
+An invalid SQL statement was used. [Parcel_Assessment_Summary]
+An invalid SQL statement was used. [SELECT OBJECTID FROM Parcel_Assessment_Summary WHERE PAID = 'N' AND FLAG = 'N]
+The table was not found. [Delinquent_Parcels_2015]
+Failed to execute (TableToTable).
+
+DEBUG:comtypes:Calling CoUnititialize()
+DEBUG:comtypes:CoUnititialize() done.

@@ -31,7 +31,7 @@ class Toolbox(object):
         # List of tool classes associated with this toolbox
         self.tools = [SetupConfigFile, AbstractOfReceiptsTool, MaintenanceAssessmentListTool, ProxyTool,
                       OwnerReceiptsCodeTool, OwnerReceiptsCountyTool, CreateFlagTable, DownloadParcels,
-                      GenerateContoursTool, MaintenanceAssessmentListTool_CS]
+                      GenerateContoursTool, MaintenanceAssessmentListTool_CS, CreateArchive]
 
 
 class SetupConfigFile(object):
@@ -716,7 +716,7 @@ class CreateArchive(object):
             parameterType="Optional",
             direction="Input")
 
-        return [archive]
+        return [archive_year]
 
     def isLicensed(self):
         """Set whether tool is licensed to execute."""
@@ -726,6 +726,8 @@ class CreateArchive(object):
         """Modify the values and properties of parameters before internal
         validation is performed.  This method is called whenever a parameter
         has been changed."""
+        if not parameters[0].altered:
+            parameters[0].value = utils.LAST_YEAR
         return
 
     def updateMessages(self, parameters):
@@ -735,7 +737,7 @@ class CreateArchive(object):
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        utils.passArgs(download.parcelDownload, [])
+        utils.passArgs(utils.Geodatabase().create_archive, [p.valueAsText for p in parameters])
 
 class DownloadParcels(object):
     def __init__(self):

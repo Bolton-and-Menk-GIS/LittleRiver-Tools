@@ -838,14 +838,14 @@ class Geodatabase(object):
             Message('Rates have not changed, skipped recalculating admin fee')
         return
 
-    def create_archive(year=LAST_YEAR):
+    def create_archive(self, year=LAST_YEAR):
         """creates an archive table for the last tax year and resets the DATE_PAID
         and AMOUNT_PAID fields.
 
         Required:
             year -- tax year of table archive
         """
-        archive_gdb = os.path.join(os.path.dirname(self.path), 'Assessment_Archives')
+        archive_gdb = os.path.join(os.path.dirname(self.path), 'Assessment_Archives.gdb')
         if not arcpy.Exists(archive_gdb):
             arcpy.management.CreateFileGDB(*os.path.split(archive_gdb))
 
@@ -857,7 +857,7 @@ class Geodatabase(object):
                 # create delinquent records
                 del_tab_name = 'Delinquent_Parcels_{}'.format(year)
                 del_tab = os.path.join(archive_gdb, del_tab_name)
-                where ="PAID = 'N' AND FLAG = 'N"
+                where ="PAID = 'N' AND FLAG = 'N'"
                 arcpy.conversion.TableToTable(table, archive_gdb, del_tab_name, where)
                 if int(arcpy.management.GetCount(del_tab).getOutput(0)) == 0:
                     arcpy.management.Delete(del_tab)
@@ -866,12 +866,12 @@ class Geodatabase(object):
                 fields = ['AMOUNT_PAID', 'DATE_PAID', 'PAID']
                 with UpdateCursor(table, fields) as rows:
                     for r in rows:
-                        rows.updateRow([None,None,'N'])
+                        rows.updateRow([0,r[1],'N']) # leave the last date paid?
 
-            else:
-                with UpdateCursor(table, ['DATE_PAID']) as rows:
-                    for r in rows:
-                        rows.updateRow([None])
+##            else:
+##                with UpdateCursor(table, ['DATE_PAID']) as rows:
+##                    for r in rows:
+##                        rows.updateRow([None])
         return
 
     def walk(self, wild='*', ftype='All'):
