@@ -368,13 +368,6 @@ def generateMAL_TOP_cs(out_excel, county, rate=10.0, year=2015, where_clause='',
     null_secs = " AND {} NOT LIKE '%99%'".format(SEC_TWN_RNG_GIS)
     where_clause = ' AND '.join(filter(None, [county_where, where_clause, no_flag]))
 
-    # get sorted section-township-range
-    utils.Message(fields)
-    tv = arcpy.management.MakeTableView(gdb.breakdown_table, 'subset', where_clause + null_secs + hide_admin)
-    with arcpy.da.SearchCursor(tv, fields, where_clause= where_clause + null_secs) as rows:
-        sorted_plss = filter(None, sorted(list(set(r[sec_ind] for r in rows))))
-    utils.Message('Cycling through {} Sections...'.format(len(sorted_plss)))
-
     # now add rows to spreadsheet
     all_pins = {}
     grand_tots = {ACRES: [], BENEFIT: [], ASSESSMENT: []}
