@@ -227,9 +227,9 @@ def applyEdits():
     updates = json.loads(data.get('updates', '[]'))
     adds = json.loads(data.get('adds', '[]'))
     deletes = json.loads(data.get('deletes', '[]'))
-    print updates, 'updates, ', bool(updates), type(updates)
-    print deletes, 'deletes, ', bool(deletes), type(deletes)
-    print 'adds, ', adds, bool(adds), type(adds)
+##    print updates, 'updates, ', bool(updates), type(updates)
+##    print deletes, 'deletes, ', bool(deletes), type(deletes)
+##    print 'adds, ', adds, bool(adds), type(adds)
     if bool(updates) or bool(deletes):
         pin_index = FIELDS.index('PIN')
         oid_index = FIELDS.index('OBJECTID')

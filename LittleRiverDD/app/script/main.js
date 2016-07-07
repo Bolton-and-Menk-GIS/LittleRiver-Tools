@@ -132,12 +132,6 @@ var getData = (function() {
       updates: updates,
        adds: adds
     }
-    // var add = {
-    //   adds: adds
-    // }
-
-    // var adds = {adds: adds}
-
     console.log('UPDATES??? ', updates)
 
     var uri = 'http://localhost:5001/rest/applyEdits'
@@ -146,6 +140,12 @@ var getData = (function() {
     })
 
   }
+
+function getOwnerSmry(code){
+  var uri = 'http://localhost:5001/rest/getOwnerSummary?code=' + code;
+  var info = LocalUtils.getJson(uri, 'jsonp', 'POST')
+  return info
+}
 
   return {
     getJSON: function(owner) {
@@ -181,6 +181,12 @@ var getData = (function() {
     },
     postEdits: function(updateList, addList) {
       var posts = editCall(updateList, addList);
+    },
+    getOwnerInfo: function(code){
+      var info = getOwnerSmry(code);
+      return{
+        info: info
+      }
     }
   }
 })();

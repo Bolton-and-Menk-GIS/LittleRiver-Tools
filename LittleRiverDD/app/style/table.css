@@ -1,17 +1,12 @@
 @import "http://fonts.googleapis.com/css?family=Montserrat:300,400,700";
 
 html {
-/*  height: 100%;
-  width: 100%;*/
-    overflow: auto;
+  height: 100%;
+  width: 100%;
+  overflow: auto;
 }
 
 body {
-  /*padding: 0 2em;*/
-
-/*  left: 0;
-  margin: 0;*/
-
   position: relative;
   font-family: Montserrat, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -79,6 +74,10 @@ position: relative;
   cursor: pointer;
 }
 
+.lb{
+  font-size: 14px;
+  box-shadow: 0 0 0 0;
+}
 /*.smryTbl:hover{
   background-color: #8eb782;
 }*/
@@ -121,6 +120,7 @@ position: relative;
 .nr{
   background-color: #e1f0f2;
   border: #aeaeae 1px solid;
+  color: #554f4f;
 }
 /*// FORM STYLES //*/
 #editForm{
@@ -158,6 +158,10 @@ position: relative;
   top:-15px;
     /*box-shadow: 0 5px 15px rgba(0,0,0,.5);*/
   /*width: 71.7%;*/
+}
+
+.tblHd{
+  color: white;
 }
 
 /* FIXED TABLE HEADER STYLING */
@@ -248,14 +252,14 @@ select#soflow-color {
     color: #222;
     /*height: 150px;*/
     width: 900px;
-    height: 200px;
+    /*height: 500px;*/
     border: 5px solid #222;
     background-color: #fff;
     position: relative;
     text-align: center;
     border-radius: 1.4em;
-/*    padding-top: 10px;
-    border-radius: 4px;*/
+    padding-bottom: 10px;
+    /*border-radius: 4px;*/
     display: none;
 }
 
@@ -263,6 +267,13 @@ select#soflow-color {
   width: 100%;
 }
 
+.tblData{
+  background-color: lightblue;
+}
+
+.tblData{
+  color: #373c44;
+}
 /* LIGHTBOX */
 
 /*$('#sum').css('border-radius', '1.4em')*/

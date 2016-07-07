@@ -27,15 +27,10 @@ if($('#summary').children().children().hasClass('newRec')){
     var rec = null;
 	// var recs = getEditRecords(rec);
 	var recs = getData.getEdits(rec);
-	
-		//EDIT BY CALEB, need to make sure a parcel ID is added if new record...
+		// EDIT BY CALEB
 		if ('NewRec' in recs.edits){
 			if (!recs.edits.NewRec.PARCEL_ID){
 				alert('You must enter a valid Parcel ID for record!');
-				var pidBox = $('.nr[idx="PARCEL_ID"]')[0]
-				// tried to simulate click here to start an edit, no dice
-				pidBox.click()
-		
 				return
 			}else {
 				recs.edits.NewRec.PIN = recs.edits.NewRec.PARCEL_ID.replace(/[-.]/g, "")
@@ -105,7 +100,6 @@ $('#DATE_PAID').one('click', function(){
 
 
     $('#summary').children().children().find('td').one('click', function(event) {
-		console.log('clicked em', this)
       if ($(this).hasClass('smryData')) {
         $(this).removeClass('smryData')
       }
@@ -200,8 +194,39 @@ function buildEditTbl(recs, idx) {
   console.log("THE EDIT LIST: ", editList);
 }
 
-function bldSummaryBox(){
+function bldSummaryBox(code){
+  var info = getData.getOwnerInfo(code);
 
+  var uri = 'http://localhost:5001/rest/getOwnerSummary?code=' + code;
+  var info = LocalUtils.getJson(uri, 'jsonp', 'POST').done(function(res){
+    
+    // format Data
+    var TadminFee = LocalUtils.toFixed(res.total_admin_fee);
+    var totalBill = LocalUtils.toFixed(res.total_bill);
+    var assmnt = LocalUtils.toFixed(res.total_assessment);
+
+    // BUILD LB TABLE
+    $('.tblData').empty();
+    $('#AF').children().children().find('td').remove();
+    $('#ownerData').append(res.code);
+    $('#nameData').append(res.name);
+    $('#dpData').append('7/7/2016');
+    $('#adminFeeData').append('$'+TadminFee);
+    $('#billData').append('$'+totalBill);
+    $('#assessData').append('$'+assmnt);
+    $('#penData').append('$'+res.penalty);
+  res.assessments.map(function(va){
+    var adminFee = LocalUtils.toFixed(va.admin_fee);  
+
+  $('#AF').append('<tr><td class="tblData" style="padding-left: 10px">'+va.pin+'</td><td class="tblData" style="padding-left: 10px">$'+adminFee+'</td></tr>');
+})
+
+  });
+
+  LightBox($('<div id="lb-content"></div>'));
+  $('#lb-content').append($('#summaryView'));
+  $('#lb-content').show();
+  $('#summaryView').css('display','block');
 }
 
 function bldSmryTbl(rec, idx, newRecord) {
@@ -259,6 +284,15 @@ function bldSrchTbl(res) {
     // $('#srchRslt').append('<tr class="srchTbl" id='+idx+'><td id="OWNER">'+v.OWNER+'</td><td id="PARCEL_ID">'+v.PARCEL_ID+'</td><td id="amountPaid">$'+v.amountPaid+'</td><td id="date">'+v.date+'</td></tr>');
   });
 
+$('.more').click(function(evt){
+  console.log("CLICKED MORE BUTTON!!")
+  evt.stopPropagation();
+  console.log("WHAT IS THIS PARENT?", $(this).parent()[0]);
+  var gid = $(this).parent()[0].id
+  console.log('GID', $(this).parent()[0].id)
+  bldSummaryBox(gid)
+})
+
   // $('.srchTbl').click(function(){
   $('.srchTbl').click(function(a) {
   $('.newRec').remove()
@@ -301,9 +335,9 @@ function buildTable(el, type, v, idx, newRecord) {
   	$('.newRec').remove();
     if(newRecord){
     	console.log('V IS? ',v)
-    el.append('<tr class="' + type + ' newRec" idx=' + idx + ' id='+v.PIN+'><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td  idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td id="DATE_PAID" idx="DATE_PAID">' + v.DATE_PAID + '</td><td idx="PENALTY">'+ v.PENALTY+'</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">'+ v.AMOUNT_PAID +'</td><td id="PAID" idx="PAID">'+ v.PAID +'</td><td idx="EXCESS">'+ v.EXCESS +'</td></tr>');
+    el.append('<tr class="' + type + ' newRec" idx=' + idx + ' id='+v.OWNER_CODE+'><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td  idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td id="DATE_PAID" idx="DATE_PAID">' + v.DATE_PAID + '</td><td idx="PENALTY">'+ v.PENALTY+'</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">'+ v.AMOUNT_PAID +'</td><td id="PAID" idx="PAID">'+ v.PAID +'</td><td idx="EXCESS">'+ v.EXCESS +'</td></tr>');
     }else{
-    	 el.append('<tr class="' + type + '" idx=' + idx + ' id='+v.PIN+'><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td id="DATE_PAID" idx="DATE_PAID">' + v.DATE_PAID + '</td><td idx="PENALTY">'+ v.PENALTY+'</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">'+ v.AMOUNT_PAID +'</td><td id="PAID" idx="PAID">'+ v.PAID +'</td><td idx="EXCESS">'+ v.EXCESS +'</td></tr>');
+    	 el.append('<tr class="' + type + '" idx=' + idx + ' id='+v.OWNER_CODE+'><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td id="DATE_PAID" idx="DATE_PAID">' + v.DATE_PAID + '</td><td idx="PENALTY">'+ v.PENALTY+'</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">'+ v.AMOUNT_PAID +'</td><td id="PAID" idx="PAID">'+ v.PAID +'</td><td idx="EXCESS">'+ v.EXCESS +'</td></tr>');
     }
    // $('.smryTbl').append('<td class="moveDown" id="mvdn"><i id="stageEdits" class="fa fa-arrow-circle-down" aria-hidden="true" data-toggle="tooltip" style="font-size: 24px"></i></td>')
 
@@ -327,21 +361,13 @@ function buildTable(el, type, v, idx, newRecord) {
     })
       // THIS TABLE DEFINITION REPRESENTS SEARCH AND EDIT
      if (!(type == 'edtbl')){
-        // el.append('<tr class="' + type + '" idx=' + idx + ' id='+values.PIN+'><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td style="min-width:100px" idx="ASSESSED_ACRES">$' + v.ASSESSED_ACRES + '</td><td idx="DATE_PAID">' + values.DATE_PAID + '</td><td style="min-width:120px" id="AMOUNT_PAID" idx="AMOUNT_PAID">$'+ v.AMOUNT_PAID +'</td><td style="min-width:36px" idx="PAID">'+ v.PAID +'</td><td class="more" id="more"><i id="morebtn" class="fa fa-arrow-circle-up btnAdd" aria-hidden="true" data-toggle="tooltip" style="font-size: 24px"></i></td></tr>');
-  		el.append('<tr class="' + type + '" idx=' + idx + ' id='+values.PIN+'><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td style="min-width:100px" idx="ASSESSED_ACRES">$' + v.ASSESSED_ACRES + '</td><td idx="DATE_PAID">' + values.DATE_PAID + '</td><td style="min-width:120px" id="AMOUNT_PAID" idx="AMOUNT_PAID">$'+ v.AMOUNT_PAID +'</td><td style="min-width:36px" idx="PAID">'+ v.PAID +'</td></tr>')
-  
-
-
-$('#morebtn').click(function(evt){
-  console.log("CLICKED MORE BUTTON!!")
-  evt.stopPropagation();
-  bldSummaryBox()
-})
+        el.append('<tr class="' + type + '" idx=' + idx + ' id='+v.OWNER_CODE+'><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td style="min-width:100px" idx="ASSESSED_ACRES">$' + v.ASSESSED_ACRES + '</td><td idx="DATE_PAID">' + v.DATE_PAID + '</td><td style="min-width:120px" id="AMOUNT_PAID" idx="AMOUNT_PAID">$'+ v.AMOUNT_PAID +'</td><td style="min-width:36px" idx="PAID">'+ v.PAID +'</td><td class="more" id="more"><i id="morebtn" class="fa fa-list-alt" aria-hidden="true" data-toggle="tooltip" style="font-size: 22px"></i></td></tr>');
+  		// el.append('<tr class="' + type + '" idx=' + idx + ' id='+values.PIN+'><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td style="min-width:100px" idx="ASSESSED_ACRES">$' + v.ASSESSED_ACRES + '</td><td idx="DATE_PAID">' + values.DATE_PAID + '</td><td style="min-width:120px" id="AMOUNT_PAID" idx="AMOUNT_PAID">$'+ v.AMOUNT_PAID +'</td><td style="min-width:36px" idx="PAID">'+ v.PAID +'</td></tr>')
   }
   	}
     
     if (type == 'edtbl') {
-            el.append('<tr class="' + type + '" idx=' + idx + ' id='+values.PIN+'><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td idx="ASSESSED_ACRES">$' + v.ASSESSED_ACRES + '</td><td idx="DATE_PAID">' + values.DATE_PAID + '</td><td style="min-width:100px" idx="PENALTY">'+ values.PENALTY+'</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">$'+ v.AMOUNT_PAID +'</td><td idx="PAID">'+ v.PAID +'</td><td idx="EXCESS">'+ v.EXCESS +'</td></tr>')
+            el.append('<tr class="' + type + '" idx=' + idx + ' id='+v.OWNER_CODE+'><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td idx="ASSESSED_ACRES">$' + v.ASSESSED_ACRES + '</td><td idx="DATE_PAID">' + v.DATE_PAID + '</td><td style="min-width:100px" idx="PENALTY">'+ v.PENALTY+'</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">$'+ v.AMOUNT_PAID +'</td><td idx="PAID">'+ v.PAID +'</td><td idx="EXCESS">'+ v.EXCESS +'</td></tr>')
     	$('.moveUp').remove();
       $('.edtbl').append('<td class="moveUp" id="ZA"><i id="btnAdd" class="fa fa-arrow-circle-up btnAdd" aria-hidden="true" data-toggle="tooltip" style="font-size: 24px"></i></td>');
     }

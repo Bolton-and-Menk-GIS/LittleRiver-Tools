@@ -7,15 +7,14 @@
 	<script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 	  <link rel="stylesheet" href="bin/jqueryUI/jquery-ui.min.css">
 	<script src='Modules/Utility.js'></script>
-	<script src='plugin/LightBox/Lightbox.js'></script>
+	<script src='Plugin/LightBox/Lightbox.js'></script>
 	<script src='script/buildTable.js'></script>
 	<script src='script/main.js'></script>
 	<script src='style/style.js'></script>
 </head>
 <body>
 
-	<h1>Little River Drainage District</h1>
-	<h2>Billing and Payments</h2>
+	<h1>Little River Drainage</h1>
 	<form class="form-container" onsubmit="return false;">
 		<div class="form-title"><h2></h2></div>
 		<div class="form-title">Search</div>
@@ -36,7 +35,7 @@
 					<th>Date Paid</th>
 					<th>Amount Paid</th>
 					<th>Paid</th>
-					<!-- <th></th> -->
+					<th></th>
 				</tr>
 				</thead>
 			</table>
@@ -79,13 +78,69 @@
 					<th>Excess</th>
 				</tr>
 			</table>
-			<div class="btn" id="postEdits" style="margin-top: 2%;">Submit</div>
+			<div class="btn" id="postEdits" style="margin-top: 1%;"><i id="postEdits" class="fa fa-check" aria-hidden="true" title='Post Records' style="font-size: 24px; margin-left: 4%;"></i></div>
 		</div>
 
-
-		<div id="summaryView" style='display: none'>
+<!-- ::::::::::::  LIGHTBOX  :::::::::::: -->
+<!-- 		<div id="summaryView" style='display: none'>
 			<h1 style="height: 20px">Summary</h1>
 			<table class="space-table" id="sum">
+				<tr class='tblHeader'>
+					<th>Name</th>
+					<th>Owner ID</th>
+					<th>Assessment</th>
+					<th>Date Paid</th>
+					<th>Penalty</th>
+					<th>Amount Paid</th>
+					<th>Bill Amount</th>
+				</tr>
+			</table>
+		</div> -->
+<!-- ::::::::::::  LIGHTBOX  :::::::::::: -->
+
+		<div id="summaryView" style='display: none'>
+			<h1 style="text-align: left; padding-bottom: 10px; padding-left: 10px; height: 30px; border-bottom: #373c44 2px solid;">Summary</h1>
+			<div style="height: 30%; width:100%">
+			<div style="float: left; margin-left: 3%;">
+			<table class="space-table lb"><tr><td class="tblHd" style="padding-left: 10px" id="OC">Owner Code</td><td class="tblData"  style="padding-left: 10px" id="ownerData"></td><td style="margin-right: 20%; background-color: white"><td class="tblHd" style="padding-left: 10px;" id="nm">Name</td><td class="tblData"  style="padding-left: 10px" id="nameData"></td><td style="margin-right: 20%; background-color: white"></td><td class="tblHd" style="padding-left: 10px; margin-right: 35%">Date Paid</td><td class="tblData" style="padding-left: 10px" id="dpData"></td></tr></table>
+			</div>
+
+<!-- 			<div style="float: left; width: 40%; margin-left: 2%">
+			<table class="space-table lb"><tr style='min-width: 235px'><td class="tblHd" style="padding-left: 10px;" id="nm">Name</td><td class="tblData"  style="padding-left: 10px" id="nameData"></td></tr></table>
+			</div>
+
+			<div style="float: right; margin-right: 4%;">
+				<table class="space-table"><tr><td class="tblHd" style="padding-left: 10px; margin-right: 35%">Date Paid</td><td class="tblData" style="padding-left: 10px" id="dpData"></td></tr></table>
+			</div> -->
+
+			</div>
+<!-- SPLIT -->
+
+			<div style="height: 30%; width:100%; margin-top: 70px;">
+<!-- 			<div style="padding-top: 20px; float: left; width: 25%; margin-left: 5%;">
+			<table class="space-table lb"><tr><td class="tblHd" style="padding-left: 10px" id="bill">Total Bill</td><td class="tblData"  style="padding-left: 10px" id="billData"></td></tr></table>
+			</div> -->
+			<div style="padding-top: 30px; margin-left: 3%;">
+				<table class="space-table lb"><tr><td class="tblHd" style="padding-left: 10px" id="bill">Total Bill</td><td class="tblData"  style="padding-left: 10px" id="billData"></td><td style="margin-right: 20%; background-color: white"></td><td class="tblHd" style="padding-left: 10px" id="assess">Total Assessment</td><td class="tblData"  style="padding-left: 10px" id="assessData"></td><td style="margin-right: 20%; background-color: white"></td><td class="tblHd" style="padding-left: 10px; margin-right: 35%">Total Admin Fee</td><td class="tblData"  style="padding-left: 10px" id="adminFeeData"></td></tr></table>
+			</div>
+<!-- 						<div style="float: right; margin-right: 11%;margin-top: 3%;">
+				<table class="space-table lb"><tr><td class="tblHd" style="padding-left: 10px; margin-right: 35%">Total Admin Fee</td><td class="tblData"  style="padding-left: 10px" id="adminFeeData"></td></tr></table>
+			</div> -->
+			</div>
+
+<!-- 						<div style="height: 30%; width:100%; margin-top:90px; margin-left: 5%">
+			<div style="">
+				<table class="space-table lb"><tr><td class="tblHd" style="padding-left: 10px">Penalty</td><td class="tblData" style="padding-left: 10px" id="penData"></td></tr></table>
+			</div>
+						</div> -->
+						<div style="height: 30%; width:100%; margin-top:30px; margin-left: 3%; margin-bottom: 15px;">
+			<div style="">
+				<table class="space-table lb" id="AF"><tr><th style="color: white" class="tblHd">PIN</th><th style="color: white" class="tblHd">Admin Fee</th></table>
+			</div>
+						</div>
+
+
+<!-- 			<table class="space-table" id="sum">
 				<tr class='tblHeader'>
 					<th>Name</th>
 					<th>Owner ID</th>
@@ -97,7 +152,7 @@
 					<th>Paid</th>
 					<th>Excess</th>
 				</tr>
-			</table>
+			</table> -->
 		</div>
 
 		<form>
