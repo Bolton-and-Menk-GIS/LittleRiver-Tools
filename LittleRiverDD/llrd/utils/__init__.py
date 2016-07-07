@@ -733,7 +733,7 @@ class Geodatabase(object):
 
         admin_fees = {}
 
-        stats = [['TOT_ASSESSMENT', 'SUM'], ['OWNER', 'FIRST']]
+        stats = [['TOT_ASSESSMENT', 'SUM'], ['OWNER', 'FIRST'], ['COUNTY', 'FIRST']]
 
         # get all owner codes for ALL_OR_NOTHING
         aon_query = ' AND '.join(filter(None, [self.no_flags, self.where_all_or_nothing, where]))
@@ -744,10 +744,11 @@ class Geodatabase(object):
             alln_summary = r'in_memory\all_or_nothing'
             arcpy.analysis.Statistics(all_tv, alln_summary, stats, 'OWNER_CODE')
 
-            with arcpy.da.SearchCursor(alln_summary, ['OWNER_CODE', 'SUM_TOT_ASSESSMENT', 'FIRST_OWNER']) as rows:
+            with arcpy.da.SearchCursor(alln_summary, ['OWNER_CODE', 'SUM_TOT_ASSESSMENT', 'FIRST_OWNER', 'FIRST_COUNTY']) as rows:
                 for r in rows:
                     dct = {'code': r[0],
                            'name': r[2],
+                           'county': r[3],
                            'type': ALL_OR_NOTHING,
                            'total_assessment': r[1] or 0,
                            'total_bill': r[1] or 0,
@@ -778,10 +779,11 @@ class Geodatabase(object):
             top_summary = r'in_memory\top_summary'
             arcpy.analysis.Statistics(all_top, top_summary, stats, 'OWNER_CODE')
 
-            with arcpy.da.SearchCursor(top_summary, ['OWNER_CODE', 'SUM_TOT_ASSESSMENT', 'FIRST_OWNER']) as rows:
+            with arcpy.da.SearchCursor(top_summary, ['OWNER_CODE', 'SUM_TOT_ASSESSMENT', 'FIRST_OWNER', 'FIRST_COUNTY']) as rows:
                 for r in rows:
                     dct = {'code': r[0],
                            'name': r[2],
+                           'county': r[3],
                            'type': TOTAL_OF_PARCELS,
                            'total_assessment': r[1] or 0,
                            'total_bill': r[1] or 0,
