@@ -7,7 +7,7 @@ html {
 }
 
 body {
-  position: relative;
+  position: absolute;
   font-family: Montserrat, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -253,9 +253,10 @@ select#soflow-color {
     /*height: 150px;*/
     width: 900px;
     /*height: 500px;*/
+    top: 20;
     border: 5px solid #222;
     background-color: #fff;
-    position: relative;
+    position: absolute;
     text-align: center;
     border-radius: 1.4em;
     padding-bottom: 10px;

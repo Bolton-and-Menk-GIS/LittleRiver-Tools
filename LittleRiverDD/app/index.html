@@ -1,162 +1,135 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<link href='style/table.css' rel='stylesheet'>
-	<link rel="stylesheet" href="style/font-awesome.css">
-	<script src='http://code.jquery.com/jquery-3.0.0.min.js'></script>
-	<script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
-	  <link rel="stylesheet" href="bin/jqueryUI/jquery-ui.min.css">
-	<script src='Modules/Utility.js'></script>
-	<script src='Plugin/LightBox/Lightbox.js'></script>
-	<script src='script/buildTable.js'></script>
-	<script src='script/main.js'></script>
-	<script src='style/style.js'></script>
-</head>
-<body>
-
-	<h1>Little River Drainage</h1>
-	<form class="form-container" onsubmit="return false;">
-		<div class="form-title"><h2></h2></div>
-		<div class="form-title">Search</div>
-		<input id="search" class="form-field" type="text" name="firstname" /><div class="btn" id="searchButton" style="margin-left: 1%"><i class="fa fa-search" aria-hidden="true"></i></div><br />
-	</form>
-
-		<div id="searchView">
-			<h1>Search Results</h1>
-				<div id='tableWrapper'>
-				  <div id="table-scroll">
-			<table class="space-table" id="srchRslt">
-				<thead class='tblHead'>
-				<tr id='srchHeader' class='space-table'>
-					<th style="width:250px">Name</th>
-					<th>Code</th>
-					<th>PIN</th>
-					<th>Assessment</th>
-					<th>Date Paid</th>
-					<th>Amount Paid</th>
-					<th>Paid</th>
-					<th></th>
-				</tr>
-				</thead>
-			</table>
-			</div>
-		</div>
-	</div>
-		<div id="stageView">
-			<h1>Edit Record</h1>
-			<table class="space-table" id="summary">
-				<tr class='tblHeader'>
-					<th>Name</th>
-					<th>Owner ID</th>
-					<th>PIN</th>
-					<th>Assessment</th>
-					<th>Date Paid</th>
-					<th>Penalty</th>
-					<th>Amount Paid</th>
-					<th>Paid</th>
-					<th>Excess</th>
-				</tr>
-
-			</table>
-			<div id= "btnContainer" style="background-color: #524856; width: 28px; padding: 0.4%; border-bottom-left-radius: 0.4em; border-bottom-right-radius: 0.4em; "><i class="fa fa-plus-circle recbtn" aria-hidden="true" id="addNew" style="margin-left:10%; font-size: 24px"></i>
-			<i id="stageEdits" class="fa fa-arrow-circle-down recbtn" aria-hidden="true" data-toggle="tooltip" style="margin-left: 10%;  font-size: 24px; display: none"></i></div>
-		<!-- <div id="LBCONTENT" style="float: right; margin-right: 15%; height: 300px; width: 500px; background-color: blue"></div> -->
-		</div>
-
-		<div id="editView">
-			<h1>Updated Records</h1>
-			<table class="space-table" id="editList">
-				<tr class='tblHeader'>
-					<th>Name</th>
-					<th>Owner ID</th>
-					<th>PIN</th>
-					<th>Assessment</th>
-					<th>Date Paid</th>
-					<th>Penalty</th>
-					<th>Amount Paid</th>
-					<th>Paid</th>
-					<th>Excess</th>
-				</tr>
-			</table>
-			<div class="btn" id="postEdits" style="margin-top: 1%;"><i id="postEdits" class="fa fa-check" aria-hidden="true" title='Post Records' style="font-size: 24px; margin-left: 4%;"></i></div>
-		</div>
-
-<!-- ::::::::::::  LIGHTBOX  :::::::::::: -->
-<!-- 		<div id="summaryView" style='display: none'>
-			<h1 style="height: 20px">Summary</h1>
-			<table class="space-table" id="sum">
-				<tr class='tblHeader'>
-					<th>Name</th>
-					<th>Owner ID</th>
-					<th>Assessment</th>
-					<th>Date Paid</th>
-					<th>Penalty</th>
-					<th>Amount Paid</th>
-					<th>Bill Amount</th>
-				</tr>
-			</table>
-		</div> -->
-<!-- ::::::::::::  LIGHTBOX  :::::::::::: -->
-
-		<div id="summaryView" style='display: none'>
-			<h1 style="text-align: left; padding-bottom: 10px; padding-left: 10px; height: 30px; border-bottom: #373c44 2px solid;">Summary</h1>
-			<div style="height: 30%; width:100%">
-			<div style="float: left; margin-left: 3%;">
-			<table class="space-table lb"><tr><td class="tblHd" style="padding-left: 10px" id="OC">Owner Code</td><td class="tblData"  style="padding-left: 10px" id="ownerData"></td><td style="margin-right: 20%; background-color: white"><td class="tblHd" style="padding-left: 10px;" id="nm">Name</td><td class="tblData"  style="padding-left: 10px" id="nameData"></td><td style="margin-right: 20%; background-color: white"></td><td class="tblHd" style="padding-left: 10px; margin-right: 35%">Date Paid</td><td class="tblData" style="padding-left: 10px" id="dpData"></td></tr></table>
-			</div>
-
-<!-- 			<div style="float: left; width: 40%; margin-left: 2%">
-			<table class="space-table lb"><tr style='min-width: 235px'><td class="tblHd" style="padding-left: 10px;" id="nm">Name</td><td class="tblData"  style="padding-left: 10px" id="nameData"></td></tr></table>
-			</div>
-
-			<div style="float: right; margin-right: 4%;">
-				<table class="space-table"><tr><td class="tblHd" style="padding-left: 10px; margin-right: 35%">Date Paid</td><td class="tblData" style="padding-left: 10px" id="dpData"></td></tr></table>
-			</div> -->
-
-			</div>
-<!-- SPLIT -->
-
-			<div style="height: 30%; width:100%; margin-top: 70px;">
-<!-- 			<div style="padding-top: 20px; float: left; width: 25%; margin-left: 5%;">
-			<table class="space-table lb"><tr><td class="tblHd" style="padding-left: 10px" id="bill">Total Bill</td><td class="tblData"  style="padding-left: 10px" id="billData"></td></tr></table>
-			</div> -->
-			<div style="padding-top: 30px; margin-left: 3%;">
-				<table class="space-table lb"><tr><td class="tblHd" style="padding-left: 10px" id="bill">Total Bill</td><td class="tblData"  style="padding-left: 10px" id="billData"></td><td style="margin-right: 20%; background-color: white"></td><td class="tblHd" style="padding-left: 10px" id="assess">Total Assessment</td><td class="tblData"  style="padding-left: 10px" id="assessData"></td><td style="margin-right: 20%; background-color: white"></td><td class="tblHd" style="padding-left: 10px; margin-right: 35%">Total Admin Fee</td><td class="tblData"  style="padding-left: 10px" id="adminFeeData"></td></tr></table>
-			</div>
-<!-- 						<div style="float: right; margin-right: 11%;margin-top: 3%;">
-				<table class="space-table lb"><tr><td class="tblHd" style="padding-left: 10px; margin-right: 35%">Total Admin Fee</td><td class="tblData"  style="padding-left: 10px" id="adminFeeData"></td></tr></table>
-			</div> -->
-			</div>
-
-<!-- 						<div style="height: 30%; width:100%; margin-top:90px; margin-left: 5%">
-			<div style="">
-				<table class="space-table lb"><tr><td class="tblHd" style="padding-left: 10px">Penalty</td><td class="tblData" style="padding-left: 10px" id="penData"></td></tr></table>
-			</div>
-						</div> -->
-						<div style="height: 30%; width:100%; margin-top:30px; margin-left: 3%; margin-bottom: 15px;">
-			<div style="">
-				<table class="space-table lb" id="AF"><tr><th style="color: white" class="tblHd">PIN</th><th style="color: white" class="tblHd">Admin Fee</th></table>
-			</div>
-						</div>
-
-
-<!-- 			<table class="space-table" id="sum">
-				<tr class='tblHeader'>
-					<th>Name</th>
-					<th>Owner ID</th>
-					<th>PIN</th>
-					<th>Assessment</th>
-					<th>Date Paid</th>
-					<th>Penalty</th>
-					<th>Amount Paid</th>
-					<th>Paid</th>
-					<th>Excess</th>
-				</tr>
-			</table> -->
-		</div>
-
-		<form>
-			<input type="hidden" name="hiddenField" />
-		</form>
-	</body>
-	</html>
+  <head>
+    <link href='style/table.css' rel='stylesheet'>
+    <link rel="stylesheet" href="style/font-awesome.css">
+    <script src='http://code.jquery.com/jquery-3.0.0.min.js'></script>
+    <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <link rel="stylesheet" href="bin/jqueryUI/jquery-ui.min.css">
+    <script src='Modules/Utility.js'></script>
+    <script src='plugin/LightBox/Lightbox.js'></script>
+    <script src='script/buildTable.js'></script>
+    <script src='script/main.js'></script>
+    <script src='style/style.js'></script>
+  </head>
+  <body>
+    <h1>Little River Drainage</h1>
+    <form class="form-container" onsubmit="return false;">
+      <div class="form-title">
+        <h2></h2>
+      </div>
+      <div class="form-title">Search</div>
+      <input id="search" class="form-field" type="text" name="firstname" />
+      <div class="btn" id="searchButton" style="margin-left: 1%"><i class="fa fa-search" aria-hidden="true"></i></div>
+      <br />
+    </form>
+    <div id="searchView">
+      <h1>Search Results</h1>
+      <div id='tableWrapper'>
+        <div id="table-scroll">
+          <table class="space-table" id="srchRslt">
+            <thead class='tblHead'>
+              <tr id='srchHeader' class='space-table'>
+                <th style="width:250px">Name</th>
+                <th>Code</th>
+                <th>PIN</th>
+                <th>Assessment</th>
+                <th>Date Paid</th>
+                <th>Amount Paid</th>
+                <th>Paid</th>
+                <th></th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="stageView">
+      <h1>Edit Record</h1>
+      <table class="space-table" id="summary">
+        <tr class='tblHeader'>
+          <th>Name</th>
+          <th>Owner ID</th>
+          <th>PIN</th>
+          <th>Assessment</th>
+          <th>Date Paid</th>
+          <th>Penalty</th>
+          <th>Amount Paid</th>
+          <th>Paid</th>
+          <th>Excess</th>
+          <th>Acres</th>
+          <th>Benefit</th>
+        </tr>
+      </table>
+      <div id= "btnContainer" style="background-color: #524856; width: 28px; padding: 0.4%; border-bottom-left-radius: 0.4em; border-bottom-right-radius: 0.4em; "><i class="fa fa-plus-circle recbtn" aria-hidden="true" id="addNew" style="margin-left:10%; font-size: 24px"></i>
+        <i id="stageEdits" class="fa fa-arrow-circle-down recbtn" aria-hidden="true" data-toggle="tooltip" style="margin-left: 10%;  font-size: 24px; display: none"></i>
+      </div>
+    </div>
+    <div id="editView">
+      <h1>Updated Records</h1>
+      <table class="space-table" id="editList">
+        <tr class='tblHeader'>
+          <th>Name</th>
+          <th>Owner ID</th>
+          <th>PIN</th>
+          <th>Assessment</th>
+          <th>Date Paid</th>
+          <th>Penalty</th>
+          <th>Amount Paid</th>
+          <th>Paid</th>
+          <th>Excess</th>
+          <th>Acres</th>
+          <th>Benefit</th>
+        </tr>
+      </table>
+      <div class="btn" id="postEdits" style="margin-top: 1%;"><i id="postEdits" class="fa fa-check" aria-hidden="true" title='Post Records' style="font-size: 24px; margin-left: 4%;"></i></div>
+    </div>
+    <div id="summaryView" style='display: none'>
+      <h1 style="text-align: left; padding-bottom: 10px; padding-left: 10px; height: 30px; border-bottom: #373c44 2px solid;">Summary</h1>
+      <div style="height: 30%; width:100%">
+        <div style="float: left; margin-left: 3%;">
+          <table class="space-table lb">
+            <tr>
+              <td class="tblHd" style="padding-left: 10px" id="OC">Owner Code</td>
+              <td class="tblData"  style="padding-left: 10px" id="ownerData"></td>
+              <td style="margin-right: 20%; background-color: white">
+              <td class="tblHd" style="padding-left: 10px;" id="nm">Name</td>
+              <td class="tblData"  style="padding-left: 10px" id="nameData"></td>
+              <td style="margin-right: 20%; background-color: white"></td>
+              <td class="tblHd" style="padding-left: 10px; margin-right: 35%">Penalty</td>
+              <td class="tblData" style="padding-left: 10px" id="penData"></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <div style="height: 30%; width:100%; margin-top: 70px;">
+        <div style="padding-top: 30px; margin-left: 3%;">
+          <table class="space-table lb">
+            <tr>
+              <td class="tblHd" style="padding-left: 10px" id="bill">Total Bill</td>
+              <td class="tblData"  style="padding-left: 10px" id="billData"></td>
+              <td style="margin-right: 20%; background-color: white"></td>
+              <td class="tblHd" style="padding-left: 10px" id="assess">Total Assessment</td>
+              <td class="tblData"  style="padding-left: 10px" id="assessData"></td>
+              <td style="margin-right: 20%; background-color: white"></td>
+              <td class="tblHd" style="padding-left: 10px; margin-right: 35%">Total Admin Fee</td>
+              <td class="tblData"  style="padding-left: 10px" id="adminFeeData"></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <div style="height: 30%; width:100%; margin-top:30px; margin-left: 3%; margin-bottom: 15px;">
+        <div style="">
+          <table class="space-table lb" id="AF">
+            <tr>
+              <th style="color: white" class="tblHd">PIN</th>
+              <th style="color: white" class="tblHd">Admin Fee</th>
+          </table>
+        </div>
+      </div>
+    </div>
+    <form>
+      <input type="hidden" name="hiddenField" />
+    </form>
+  </body>
+</html>

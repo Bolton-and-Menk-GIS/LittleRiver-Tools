@@ -270,7 +270,7 @@ def applyEdits():
                     yr = cast('DATE_PAID', atts.get('DATE_PAID')).year - 1
                 except:
                     yr = None
-                r[FIELD_INDEX_MAP['YEAR']] = yr
+                row[FIELD_INDEX_MAP['YEAR']] = yr
             irows.insertRow(row)
 
     status={'status': 'success',

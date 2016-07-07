@@ -1196,6 +1196,42 @@ class Geodatabase(object):
         # return LandOwners() object
         return LandOwners(county_pretty, munch.munchify(aoc))
 
+    def getOwnersForProxy(self):
+        """gets land owners json for proxy"""
+        tmp_sum = r'in_memory\tmp_sum'
+        stats = [['ASSESSED_ACRES', 'SUM'], ['OWNER', 'FIRST'], ['OWNER2', 'FIRST']]
+        arcpy.analysis.Statistics(self.summary_table, tmp_sum, stats, 'OWNER_CODE')
+
+        # acre dict
+        with arcpy.da.SearchCursor(tmp_sum, ['OWNER_CODE', 'SUM_ASSESSED_ACRES', 'FIRST_OWNER', 'FIRST_OWNER2']) as rows:
+            acre_dict = {r[0]:{'acres': r[1], 'owner': r[2], 'owner2': r[3]} for r in rows}
+
+        # active owner fields
+        landowners = []
+        #print self.aoc_fields
+        with arcpy.da.SearchCursor(self.active_owners, self.aoc_fields) as rows:
+            for r in rows:
+                if r[0] in acre_dict:
+                    own = acre_dict[r[0]]
+                    if len(filter(None, r[5:8])) == 3:
+                        addr_suff = '{}, {} {}'.format(*r[5:8])
+                    else:
+                        addr_suff = ' '.join(map(str, filter(None, r[5:8])))
+                    landowners.append(
+                    {'code': r[0],
+                    'name': own['owner'],
+                     'name2': own['owner2'],
+                     'total_acres': own['acres'] or 0,
+                     'address': r[3],
+                     'address2': r[4],
+                     'city': r[5],
+                     'state': r[6],
+                     'zip': r[7],
+                     'isActive': r[8],
+                     'address_suffix': addr_suff})
+
+        return munch.munchify(landowners)
+
     def getOwnerReceiptDict(self, county='', year=LAST_YEAR, where_clause=''):
         """generates owner receipt dict
 

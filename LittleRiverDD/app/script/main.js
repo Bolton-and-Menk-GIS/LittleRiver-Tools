@@ -20,23 +20,13 @@ var getData = (function() {
       }
     }
     var code = fq(qry);
-
     var uri = 'http://localhost:5001/rest/query?' + code
-
-    console.log('uri: ', uri)
-
-    // var uri = 'http://localhost:5001/rest/query?owner=' + owner + '&county=bollinger'
+    
     LocalUtils.getJson(uri, 'jsonp', 'POST').done(function(res) {
-      console.log("DATA", res);
       var info = {};
-
       info.attributes = getInfo(res);
-
       data.attributes = info.attributes;
-
       bldSrchTbl(info.attributes);
-      console.log('info', info)
-
       data.fieldMaps = getFields(res[0]);
     });
   }
@@ -45,8 +35,6 @@ var getData = (function() {
     var info = res.map(function(v, idx) {
       var dateFix = LocalUtils.formatDate(v.attributes.DATE_PAID);
       var amountPaid = LocalUtils.toFixed(v.attributes.AMOUNT_PAID);
-      // v.attributes.date = dateFix.outputDate;
-      // v.attributes.amountPaid = amountPaid
       v.attributes.DATE_PAID = LocalUtils.formatDate(v.attributes.DATE_PAID).outputDate;
       v.attributes.AMOUNT_PAID = amountPaid
       v.attributes.ASSESSED_ACRES = LocalUtils.toFixed(v.attributes.ASSESSED_ACRES);
@@ -58,30 +46,21 @@ var getData = (function() {
   function getFields(res) {
     var propsArray = [];
     var props = Object.getOwnPropertyNames(res.attributes)
-
-    $('#summary').children().children().children().each(function(val, a) {
-      console.log("SUMMARY TABVLE FIELDS: ", val, $(a).text())
-    });
+    $('#summary').children().children().children().each(function(val, a) {});
     return props;
   }
 
   function getEditRecords(rec) {
-    // BECAUSE WHEN YOU PASS UP 
-    console.log("RECLA>A>>", rec)
     if (!(rec)) {
-      console.log("YOUYO")
       newRec = {};
       editRecs = {};
       newRec.PIN = 'null';
       newRec.newRecord = 'NewRecord';
       $('#summary').children().children().find('td').each(function(ind, val) {
-        console.log("IND: ", this.id, "Val", $(this).html());
-        // editRecs[this.id] = $(this).html();
         var idx = $(this).attr('idx');
         if (idx == 'DATE_PAID' && $('#dp').datepicker().val()) {
           newRec[idx] = $('#dp').datepicker().val();
         } else if (idx == 'PAID' && !$('#soflow').val()) {
-          console.log('PAID!!!!!!', $(this).html())
           newRec[idx] = $(this).html();
         } else if (idx == 'PAID' && $('#soflow').val()) {
           newRec[idx] = $('#soflow').val();
@@ -91,8 +70,6 @@ var getData = (function() {
       });
 
     } else {
-
-      console.log("REC????????", rec)
       newRec = {};
       editRecs = {};
       Object.keys(rec).forEach(function(key) {
@@ -104,7 +81,6 @@ var getData = (function() {
               newRec[key] = $('#dp').datepicker().val();
               editRecs[key] = $('#dp').datepicker().val();
             } else if (key == 'PAID' && !$('#soflow').val()) {
-              console.log('PAID!!!!!!')
               newRec[key] = $(this).html();
             } else if (key == 'PAID' && $('#soflow').val()) {
               newRec[key] = $('#soflow').val();
@@ -123,29 +99,25 @@ var getData = (function() {
   }
 
   function editCall(updates, adds) {
-    console.log('adds::: ', updates)
     updates = JSON.stringify(updates);
     adds = JSON.stringify(adds);
 
 
     var update = {
       updates: updates,
-       adds: adds
+      adds: adds
     }
-    console.log('UPDATES??? ', updates)
 
     var uri = 'http://localhost:5001/rest/applyEdits'
-    LocalUtils.getJson(uri, 'jsonp', 'POST', update).done(function(res) {
-      console.log(res);
-    })
+    LocalUtils.getJson(uri, 'jsonp', 'POST', update).done(function(res) {})
 
   }
 
-function getOwnerSmry(code){
-  var uri = 'http://localhost:5001/rest/getOwnerSummary?code=' + code;
-  var info = LocalUtils.getJson(uri, 'jsonp', 'POST')
-  return info
-}
+  function getOwnerSmry(code) {
+    var uri = 'http://localhost:5001/rest/getOwnerSummary?code=' + code;
+    var info = LocalUtils.getJson(uri, 'jsonp', 'POST')
+    return info
+  }
 
   return {
     getJSON: function(owner) {
@@ -163,7 +135,6 @@ function getOwnerSmry(code){
     },
     getEdits: function(rec) {
       var editRecs = getEditRecords(rec);
-      console.log("EDIT RECORDS??? ", editRecs);
       return {
         data: data,
         info: info,
@@ -182,9 +153,9 @@ function getOwnerSmry(code){
     postEdits: function(updateList, addList) {
       var posts = editCall(updateList, addList);
     },
-    getOwnerInfo: function(code){
+    getOwnerInfo: function(code) {
       var info = getOwnerSmry(code);
-      return{
+      return {
         info: info
       }
     }

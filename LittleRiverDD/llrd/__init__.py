@@ -390,12 +390,6 @@ class ProxyTool(object):
             parameterType="Required",
             direction="Input")
 
-        county = arcpy.Parameter(displayName="County",
-            name="county",
-            datatype="String",
-            parameterType="Required",
-            direction="Input")
-
         city = arcpy.Parameter(displayName="Meeting City",
             name="city",
             datatype="String",
@@ -414,7 +408,7 @@ class ProxyTool(object):
             parameterType="Required",
             direction="Input")
 
-        return [output, county, city, mCounty, date]
+        return [output, city, mCounty, date]
 
     def isLicensed(self):
         """Set whether tool is licensed to execute."""
@@ -424,15 +418,14 @@ class ProxyTool(object):
         """Modify the values and properties of parameters before internal
         validation is performed.  This method is called whenever a parameter
         has been changed."""
-        parameters[1].filter.list = self.gdb.list_counties()
+        if not parameters[1].altered:
+            parameters[1].value = proxy.DEFAULT_CITY
+
         if not parameters[2].altered:
-            parameters[2].value = proxy.DEFAULT_CITY
+            parameters[2].value = proxy.DEFAULT_COUNTY
 
         if not parameters[3].altered:
-            parameters[3].value = proxy.DEFAULT_COUNTY
-
-        if not parameters[4].altered:
-            parameters[4].value = proxy.DEFAULT_DATE
+            parameters[3].value = proxy.DEFAULT_DATE
 
         return
 
@@ -443,7 +436,7 @@ class ProxyTool(object):
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        args = [p.valueAsText if i != 4 else p.value for i,p in enumerate(parameters)]
+        args = [p.valueAsText if i != 3 else p.value for i,p in enumerate(parameters)]
         utils.passArgs(proxy.generateProxyBallots, args)
 
 class OwnerReceiptsCountyTool(object):

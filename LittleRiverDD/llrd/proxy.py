@@ -38,11 +38,10 @@ DEFAULT_CITY = 'Wardell'
 DEFAULT_COUNTY = 'Pemiscot County'
 
 @utils.timeit
-def generateProxyBallots(out_folder, county, meeting_city=DEFAULT_CITY, meeting_county=DEFAULT_COUNTY, meeting_date=DEFAULT_DATE):
+def generateProxyBallots(out_folder, meeting_city=DEFAULT_CITY, meeting_county=DEFAULT_COUNTY, meeting_date=DEFAULT_DATE):
     """generate proxy reports for each owner
     Required:
         out_folder -- output folder location for all proxy ballots
-        county -- name of county to generate proxy for
     Optional:
         meeting_city -- name of city where meeting will occur
         meeting_county -- name of county where meeting will occur
@@ -57,9 +56,9 @@ def generateProxyBallots(out_folder, county, meeting_city=DEFAULT_CITY, meeting_
 
     # get Landowners object
     gdb = utils.Geodatabase()
-    landowners = gdb.getOwners(county)
+    landowners = gdb.getOwnersForProxy()
 
-    out_pdf_path = os.path.join(out_folder, '{}_Proxy.pdf'.format(county.replace(' ','_')))
+    out_pdf_path = os.path.join(out_folder, 'LRDD_Proxy.pdf')
     if os.path.exists(out_pdf_path):
         try:
             os.remove(out_pdf_path)
@@ -86,58 +85,59 @@ def generateProxyBallots(out_folder, county, meeting_city=DEFAULT_CITY, meeting_
     # iterate through landowners and generate proxy for each one
     addresses = []
     for owner in landowners:
+        if owner.address:
 
-        c.setFont('Courier New', 11)
+            c.setFont('Courier New', 11)
 
-        # set to initial position for title
-        label = c.beginText()
-        label.setTextOrigin(title_hz, title_vt)
-        title_lines = ['PROXY for the LITTLE RIVER DRAINAGE DISTRICT', ' ', date_string]
-        label.textLines(title_lines, 0)
-        c.drawText(label)
+            # set to initial position for title
+            label = c.beginText()
+            label.setTextOrigin(title_hz, title_vt)
+            title_lines = ['PROXY for the LITTLE RIVER DRAINAGE DISTRICT', ' ', date_string]
+            label.textLines(title_lines, 0)
+            c.drawText(label)
 
-        # move to position for body
-        body = c.beginText()
-        body.setTextOrigin(body_hz, body_vt)
-        body_text = BODY_ELM.format(COUNTY=meeting_county.title(), CITY=meeting_city.title(), DAY=day,
-                                     MONTH=calendar.month_name[month], YEAR=year, SHORT_LINE=SHORT)
-        first_part = textwrap.wrap(body_text, 75)
-        body.textLines(first_part + [' ' * (len(first_part[-1]) + 1) + LONG, BODY_ELM2])
-        c.drawText(body)
+            # move to position for body
+            body = c.beginText()
+            body.setTextOrigin(body_hz, body_vt)
+            body_text = BODY_ELM.format(COUNTY=meeting_county.title(), CITY=meeting_city.title(), DAY=day,
+                                         MONTH=calendar.month_name[month], YEAR=year, SHORT_LINE=SHORT)
+            first_part = textwrap.wrap(body_text, 75)
+            body.textLines(first_part + [' ' * (len(first_part[-1]) + 1) + LONG, BODY_ELM2])
+            c.drawText(body)
 
-        # move to position for owner info
-        owner_label = c.beginText()
-        owner_label.setTextOrigin(owner_hz, owner_vt)
-        multi_line_owner = '\r\n'.join(filter(None, [owner.name, owner.name2]))
-        owner_lines = filter(None, [owner.name, owner.name2, owner.address,
-                            owner.address_suffix if owner.address_suffix != None else ' '])
-        owner_label.textLines(owner_lines)
-        c.drawText(owner_label)
+            # move to position for owner info
+            owner_label = c.beginText()
+            owner_label.setTextOrigin(owner_hz, owner_vt)
+            multi_line_owner = '\r\n'.join(filter(None, [owner.name, owner.name2]))
+            owner_lines = filter(None, [owner.name, owner.name2, owner.address,
+                                owner.address_suffix if owner.address_suffix != None else ' '])
+            owner_label.textLines(owner_lines)
+            c.drawText(owner_label)
 
-        # move to position for acre info
-        acre_label = c.beginText()
-        acre_label.setTextOrigin(acre_hz, acre_vt)
-        acre_lines = [owner.code, 'Total ACRES owned', 'in the District ={:6}'.format(int(math.floor(owner.sum('assessed_acres'))))]
-        acre_label.textLines(acre_lines)
-        c.drawText(acre_label)
+            # move to position for acre info
+            acre_label = c.beginText()
+            acre_label.setTextOrigin(acre_hz, acre_vt)
+            acre_lines = [owner.code, 'Total ACRES owned', 'in the District ={:6}'.format(int(math.floor(owner.total_acres)))]
+            acre_label.textLines(acre_lines)
+            c.drawText(acre_label)
 
-        # move to position for signature
-        sig_label = c.beginText()
-        sig_label.setTextOrigin(sig_hz, sig_vt)
-        sig_label.textLines([SIG_LINE, 'SIGNATURE OF LANDOWNER'])
-        c.drawText(sig_label)
+            # move to position for signature
+            sig_label = c.beginText()
+            sig_label.setTextOrigin(sig_hz, sig_vt)
+            sig_label.textLines([SIG_LINE, 'SIGNATURE OF LANDOWNER'])
+            c.drawText(sig_label)
 
-        # page break
-        c.showPage()
+            # page break
+            c.showPage()
 
-        # add to addresses
-        addresses.append([multi_line_owner, owner.address, owner.address_suffix])
+            # add to addresses
+            addresses.append([multi_line_owner, owner.address, owner.address_suffix])
 
     c.save()
     del c
 
     # generate mailing labels
-    out_labels = os.path.join(out_folder, '{}_MailingLabelsProxy.pdf'.format(county.replace(' ','_')))
+    out_labels = os.path.join(out_folder, 'LRDD_MailingLabelsProxy.pdf')
     avery5160(out_labels, addresses)
     return out_pdf_path
 
