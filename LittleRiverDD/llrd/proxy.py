@@ -117,7 +117,7 @@ def generateProxyBallots(out_folder, meeting_city=DEFAULT_CITY, meeting_county=D
             # move to position for acre info
             acre_label = c.beginText()
             acre_label.setTextOrigin(acre_hz, acre_vt)
-            acre_lines = [owner.code, 'Total ACRES owned', 'in the District ={:6}'.format(int(math.floor(owner.total_acres)))]
+            acre_lines = [owner.code, 'Total ACRES owned', 'in the District ={:6}'.format(int(math.floor(owner.total_acres)) or 1)]
             acre_label.textLines(acre_lines)
             c.drawText(acre_label)
 

@@ -74,7 +74,7 @@ $(function() {
     $('.newRec').remove();
 
 
-    $('#summary').children().append('<tr class="newRec" id="newRec"><td class="nr" idx="OWNER"></td><td class="nr" idx="OWNER_CODE"></td><td class="nr" idx="PARCEL_ID"></td><td class="nr" idx="ASSESSED_ACRES"></td><td class="nr" idx="DATE_PAID" id="DATE_PAID"></td><td class="nr" idx="PENALTY"></td><td class="nr" idx="AMOUNT_PAID"></td><td class="nr" id="PAID" idx="PAID"></td><td class="nr" idx="EXCESS"></td></tr>');
+    $('#summary').children().append('<tr class="newRec" id="newRec"><td class="nr" idx="OWNER"></td><td class="nr" idx="OWNER_CODE"></td><td class="nr" idx="PARCEL_ID"></td><td class="nr" idx="ASSESSED_ACRES"></td><td class="nr" idx="DATE_PAID" id="DATE_PAID"></td><td class="nr" idx="YEAR"></td><td class="nr" idx="PENALTY"></td><td class="nr" idx="AMOUNT_PAID"></td><td class="nr" id="PAID" idx="PAID"></td><td class="nr" idx="EXCESS"></td><td class="nr" idx="ASSESSED_ACRES"></td><td class="nr" idx="TOT_BENEFIT"></td></tr>');
     // $('.smryTbl').append('<td class="moveDown" id="ZA"><i id="moveDown" class="fa fa-arrow-circle-down" aria-hidden="true" data-toggle="tooltip" style="font-size: 24px"></i></td>')
 
     // DATE STUFF
@@ -97,7 +97,17 @@ $(function() {
       $(this).addClass('smryData');
       $('#mvdn').removeClass('smryData');
       var fm = $(this).html();
-      var rw = $('<input type="text" tabindex="1" class="newRec" id="input0" placeholder="Add New Record" value="' + fm + '" style="width: 250px">');
+
+    console.log("NEW REC EL ", $($(this)[0]).attr('idx'))
+
+   var width = '65px';
+
+    if (($($(this)[0]).attr('idx') == 'PARCEL_ID') || ($($(this)[0]).attr('idx') == 'OWNER')) {
+      console.log("LONG FIELD")
+      width = '200px';
+    }
+
+      var rw = $('<input type="text" tabindex="1" class="newRec" id="input0" placeholder="Add New Record" value="' + fm + '" style="width:'+width+'">');
       var cw = $('input[name="hiddenField"]');
       $(this).inlineEdit(rw, cw);
       displayBtn();
@@ -164,14 +174,25 @@ function buildEditTbl(recs, idx) {
 }
 
 function bldSummaryBox(code) {
-  var info = getData.getOwnerInfo(code);
+  var getInfo = getData.getOwnerInfo(code);
+
+  // var information = getInfo.promise(function(res){
+  //   console.log("RESULT PROMISE: ", res)
+  // })
+
   var uri = 'http://localhost:5001/rest/getOwnerSummary?code=' + code;
   var info = LocalUtils.getJson(uri, 'jsonp', 'POST').done(function(res) {
 
+    console.log('RES? ', res)
     // format Data
     var TadminFee = LocalUtils.toFixed(res.total_admin_fee);
     var totalBill = LocalUtils.toFixed(res.total_bill);
     var assmnt = LocalUtils.toFixed(res.total_assessment);
+    // var countyAbbrv = res.county
+
+    var countyAbbrv = res.county.replace('COUNTY', '');
+
+    console.log("CA: ", countyAbbrv)
 
     // BUILD LB TABLE
     $('.tblData').empty();
@@ -183,9 +204,9 @@ function bldSummaryBox(code) {
     $('#billData').append('$' + totalBill);
     $('#assessData').append('$' + assmnt);
     $('#penData').append('$' + res.penalty);
+    $('#countyData').append(countyAbbrv);
     res.assessments.map(function(va) {
       var adminFee = LocalUtils.toFixed(va.admin_fee);
-
       $('#AF').append('<tr><td class="tblData" style="padding-left: 10px">' + va.pin + '</td><td class="tblData" style="padding-left: 10px">$' + adminFee + '</td></tr>');
     })
 
@@ -214,7 +235,22 @@ function bldSmryTbl(rec, idx, newRecord) {
     $(this).addClass('smryData');
 
     var fm = $(this).html();
-    var rw = $('<input type="text" class="inpt" id="input' + idx + '" value="' + fm + '" style="width: 250px">');
+
+    console.log("HUH ", $($(this)[0]).attr('idx'))
+
+    var width = '65px';
+
+    if (($($(this)[0]).attr('idx') == 'PARCEL_ID') || ($($(this)[0]).attr('idx') == 'OWNER')) {
+      console.log("LONG FIELD")
+      width = '200px';
+    }
+
+    var rw = $('<input type="text" class="inpt" data-id="'+$($(this)[0]).attr('idx')+'" id="input' + idx + '" value="' + fm + '" style="width: '+width+'">');
+
+    // $(rw).id()
+    console.log('RW VALUE ', rw[0])
+    // $('.nr[idx="PARCEL_ID"]')[0]
+
     var cw = $('input[name="hiddenField"]');
     $(this).inlineEdit(rw, cw);
     //<input type="text" id="row-1-age" name="row-1-age" value="61">
@@ -284,9 +320,9 @@ function buildTable(el, type, v, idx, newRecord) {
   if (type == 'smryTbl') {
     $('.newRec').remove();
     if (newRecord) {
-      el.append('<tr class="' + type + ' newRec" idx=' + idx + ' id=' + v.OWNER_CODE + '><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td  idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td id="DATE_PAID" idx="DATE_PAID">' + v.DATE_PAID + '</td><td idx="PENALTY">' + v.PENALTY + '</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">' + v.AMOUNT_PAID + '</td><td id="PAID" idx="PAID">' + v.PAID + '</td><td idx="EXCESS">' + v.EXCESS + '</td><td idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td idx="TOT_BENEFIT">' + v.TOT_BENEFIT + '</td></tr>');
+      el.append('<tr class="' + type + ' newRec" idx=' + idx + ' id=' + v.OWNER_CODE + '><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td  idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td id="DATE_PAID" idx="DATE_PAID">' + v.DATE_PAID + '</td><td id="YEAR" idx="YEAR">' + v.YEAR + '</td><td idx="PENALTY">' + v.PENALTY + '</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">' + v.AMOUNT_PAID + '</td><td id="PAID" idx="PAID">' + v.PAID + '</td><td idx="EXCESS">' + v.EXCESS + '</td><td idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td idx="TOT_BENEFIT">' + v.TOT_BENEFIT + '</td></tr>');
     } else {
-      el.append('<tr class="' + type + '" idx=' + idx + ' id=' + v.OWNER_CODE + '><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td id="DATE_PAID" idx="DATE_PAID">' + v.DATE_PAID + '</td><td idx="PENALTY">' + v.PENALTY + '</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">' + v.AMOUNT_PAID + '</td><td id="PAID" idx="PAID">' + v.PAID + '</td><td idx="EXCESS">' + v.EXCESS + '</td><td idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td idx="TOT_BENEFIT">' + v.TOT_BENEFIT + '</td></tr>');
+      el.append('<tr class="' + type + '" idx=' + idx + ' id=' + v.OWNER_CODE + '><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td id="DATE_PAID" idx="DATE_PAID">' + v.DATE_PAID + '</td><td id="YEAR" idx="YEAR">' + v.YEAR + '</td><td idx="PENALTY">' + v.PENALTY + '</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">' + v.AMOUNT_PAID + '</td><td id="PAID" idx="PAID">' + v.PAID + '</td><td idx="EXCESS">' + v.EXCESS + '</td><td idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td idx="TOT_BENEFIT">' + v.TOT_BENEFIT + '</td></tr>');
     }
     // $('.smryTbl').append('<td class="moveDown" id="mvdn"><i id="stageEdits" class="fa fa-arrow-circle-down" aria-hidden="true" data-toggle="tooltip" style="font-size: 24px"></i></td>')
 
@@ -314,7 +350,7 @@ function buildTable(el, type, v, idx, newRecord) {
     }
 
     if (type == 'edtbl') {
-      el.append('<tr class="' + type + '" idx=' + idx + ' id=' + v.OWNER_CODE + '><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td idx="ASSESSED_ACRES">$' + v.ASSESSED_ACRES + '</td><td idx="DATE_PAID">' + v.DATE_PAID + '</td><td style="min-width:100px" idx="PENALTY">' + v.PENALTY + '</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">$' + v.AMOUNT_PAID + '</td><td idx="PAID">' + v.PAID + '</td><td idx="EXCESS">' + v.EXCESS + '</td><td idx="ASSESSED_ACRES">$' + v.ASSESSED_ACRES + '</td><td idx="TOT_BENEFIT">$' + v.TOT_BENEFIT + '</td></tr>')
+      el.append('<tr class="' + type + '" idx=' + idx + ' id=' + v.OWNER_CODE + '><td idx="OWNER">' + v.OWNER + '</td><td idx="OWNER_CODE">' + v.OWNER_CODE + '</td><td idx="PARCEL_ID">' + v.PARCEL_ID + '</td><td idx="ASSESSED_ACRES">$' + v.ASSESSED_ACRES + '</td><td idx="DATE_PAID">' + v.DATE_PAID + '</td><td id="YEAR" idx="YEAR">' + v.YEAR + '</td><td style="min-width:100px" idx="PENALTY">' + v.PENALTY + '</td><td id="AMOUNT_PAID" idx="AMOUNT_PAID">$' + v.AMOUNT_PAID + '</td><td idx="PAID">' + v.PAID + '</td><td idx="EXCESS">' + v.EXCESS + '</td><td idx="ASSESSED_ACRES">' + v.ASSESSED_ACRES + '</td><td idx="TOT_BENEFIT">$' + v.TOT_BENEFIT + '</td></tr>')
       $('.moveUp').remove();
       $('.edtbl').append('<td class="moveUp" id="ZA"><i id="btnAdd" class="fa fa-arrow-circle-up btnAdd" aria-hidden="true" data-toggle="tooltip" style="font-size: 24px"></i></td>');
     }
@@ -374,12 +410,28 @@ function processEdits(changeList) {
     return !(val.newRecord)
   })
 
-  getData.postEdits(updateList, addList);
+  var status = getData.postEdits(updateList, addList);
 
-  editList = [];
-  updateList = [];
-  addList = [];
-  $('.edtbl').remove();
+  console.log('STATUS ', status)
+
+var prm = status.promise();
+
+prm.done(function(b){
+  console.log("STATUS: ", b.status)
+
+  if(b.status == "success"){
+    editList = [];
+    updateList = [];
+    addList = [];
+    $('.edtbl').remove();
+  }else{
+    alert('Post Edits Failed, check to make sure ArcMap or ArcCatalog are closed and try again');
+  }
+
+})
+
+
+
 
   // CLEAN DATA
   //globObj.editRecs.NewRec.OWNER = globObj.editRecs.NewRec.OWNER.replace('amp;','');

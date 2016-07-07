@@ -4,7 +4,7 @@
     <link href='style/table.css' rel='stylesheet'>
     <link rel="stylesheet" href="style/font-awesome.css">
     <script src='http://code.jquery.com/jquery-3.0.0.min.js'></script>
-    <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <script src='http://code.jquery.com/ui/1.11.4/jquery-ui.js'></script>
     <link rel="stylesheet" href="bin/jqueryUI/jquery-ui.min.css">
     <script src='Modules/Utility.js'></script>
     <script src='plugin/LightBox/Lightbox.js'></script>
@@ -53,6 +53,7 @@
           <th>PIN</th>
           <th>Assessment</th>
           <th>Date Paid</th>
+          <th>Tax Year</th>
           <th>Penalty</th>
           <th>Amount Paid</th>
           <th>Paid</th>
@@ -74,6 +75,7 @@
           <th>PIN</th>
           <th>Assessment</th>
           <th>Date Paid</th>
+          <th>Tax Year</th>
           <th>Penalty</th>
           <th>Amount Paid</th>
           <th>Paid</th>
@@ -90,14 +92,14 @@
         <div style="float: left; margin-left: 3%;">
           <table class="space-table lb">
             <tr>
-              <td class="tblHd" style="padding-left: 10px" id="OC">Owner Code</td>
-              <td class="tblData"  style="padding-left: 10px" id="ownerData"></td>
-              <td style="margin-right: 20%; background-color: white">
               <td class="tblHd" style="padding-left: 10px;" id="nm">Name</td>
               <td class="tblData"  style="padding-left: 10px" id="nameData"></td>
+              <td style="margin-right: 20%; background-color: white">
+              <td class="tblHd" style="padding-left: 10px" id="OC">Owner Code</td>
+              <td class="tblData"  style="padding-left: 10px" id="ownerData"></td>
               <td style="margin-right: 20%; background-color: white"></td>
-              <td class="tblHd" style="padding-left: 10px; margin-right: 35%">Penalty</td>
-              <td class="tblData" style="padding-left: 10px" id="penData"></td>
+              <td class="tblHd"  style="padding-left: 10px">County</td>
+              <td class="tblData"  style="padding-left: 10px" id="countyData"></td>
             </tr>
           </table>
         </div>
@@ -114,6 +116,9 @@
               <td style="margin-right: 20%; background-color: white"></td>
               <td class="tblHd" style="padding-left: 10px; margin-right: 35%">Total Admin Fee</td>
               <td class="tblData"  style="padding-left: 10px" id="adminFeeData"></td>
+              <td style="margin-right: 20%; background-color: white"></td>
+              <td class="tblHd" style="padding-left: 10px; margin-right: 35%">Penalty</td>
+              <td class="tblData" style="padding-left: 10px" id="penData"></td>
             </tr>
           </table>
         </div>

@@ -109,8 +109,11 @@ var getData = (function() {
     }
 
     var uri = 'http://localhost:5001/rest/applyEdits'
-    LocalUtils.getJson(uri, 'jsonp', 'POST', update).done(function(res) {})
-
+    var postCall = LocalUtils.getJson(uri, 'jsonp', 'POST', update).done(function(res) {
+        console.log("RESULT: ", res);
+        return res
+    });
+    return postCall
   }
 
   function getOwnerSmry(code) {
@@ -152,6 +155,7 @@ var getData = (function() {
     },
     postEdits: function(updateList, addList) {
       var posts = editCall(updateList, addList);
+      return posts
     },
     getOwnerInfo: function(code) {
       var info = getOwnerSmry(code);

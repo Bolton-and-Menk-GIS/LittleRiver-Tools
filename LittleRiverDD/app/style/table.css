@@ -139,6 +139,10 @@ position: relative;
   background-color: #524856;
 }
 
+#summaryView{
+  padding-right: 3%;
+}
+
 .tblHeader{
       border-bottom: solid #8383a5 2pt;
 }
@@ -158,10 +162,6 @@ position: relative;
   top:-15px;
     /*box-shadow: 0 5px 15px rgba(0,0,0,.5);*/
   /*width: 71.7%;*/
-}
-
-.tblHd{
-  color: white;
 }
 
 /* FIXED TABLE HEADER STYLING */
@@ -268,12 +268,18 @@ select#soflow-color {
   width: 100%;
 }
 
-.tblData{
-  background-color: lightblue;
+.tblHd{
+  color: white;
 }
 
 .tblData{
+    background-color: lightblue;
   color: #373c44;
+  /*min-width: 110px;*/
+}
+
+#morebtn:hover{
+  color: #f2fe7d;
 }
 /* LIGHTBOX */
 
