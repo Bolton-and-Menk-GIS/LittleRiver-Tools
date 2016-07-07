@@ -1,0 +1,27 @@
+v0.8B 7.6
+Summary UI (Progress)
+UI Adjustments
+
+v0.7B 7.5
+Table Header Adjustments
+Date Picker Complete
+Post Updates Complete
+
+v0.6B
+Date Picker
+
+v0.5B 7.1
+Pre Table scroll Functionality
+
+v0.4B 6.30.5
+Edits (Progress)
+
+v0.3B 6.30
+Modular Conversion
+
+v0.2B 6.28
+2nd Build 
+UI Build
+
+v0.1B
+First Build

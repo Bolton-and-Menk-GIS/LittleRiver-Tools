@@ -1,0 +1,1 @@
+start %~dp0\LittleRiverDD\app\python\rest_service.py
