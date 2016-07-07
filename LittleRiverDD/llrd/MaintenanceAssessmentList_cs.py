@@ -87,6 +87,7 @@ def generateMAL_AON_cs(out_excel, county, rate=10.0, year=2015, where_clause='',
             owner code and legal description (records are already sorted by
             section-township-range)
     """
+    rate = float(rate)
     if os.path.exists(out_excel):
         os.remove(out_excel)
 
@@ -183,7 +184,7 @@ def generateMAL_AON_cs(out_excel, county, rate=10.0, year=2015, where_clause='',
     #
     # recalculate admin fees if necessary
     #
-    if int(rate) != utils.getConfig().get('rate'):
+    if float(rate) != float(utils.getRate()):
         gdb.calculate_admin_fee(rate)
 
     # now add rows to spreadsheet
@@ -280,6 +281,7 @@ def generateMAL_TOP_cs(out_excel, county, rate=10.0, year=2015, where_clause='',
             owner code and legal description (records are already sorted by
             section-township-range)
     """
+    rate = float(rate)
     if os.path.exists(out_excel):
         os.remove(out_excel)
 
@@ -378,7 +380,7 @@ def generateMAL_TOP_cs(out_excel, county, rate=10.0, year=2015, where_clause='',
         for r in rows:
 
             vals = list(r)[:len(fields)]
-            vals[headers.index(ASSESSMENT)] = Formula(ASSESSMENT_FORMULA.format(b='%s%s' %(ben_col, ws._currentRowIndex+1), r=(rate * 0.01)))
+            vals[headers.index(ASSESSMENT)] = Formula(ASSESSMENT_FORMULA.format(b='%s%s' %(ben_col, ws._currentRowIndex+1), r=(float(rate) * 0.01)))
 
             ws.addRow(*vals)
             all_pins[r[-1]] = vals
@@ -404,7 +406,7 @@ def generateMAL_TOP_cs(out_excel, county, rate=10.0, year=2015, where_clause='',
     #
     # recalculate admin fees if necessary
     #
-    if int(rate) != utils.getConfig().get('rate'):
+    if float(rate) != float(utils.getRate()):
         gdb.calculate_admin_fee(rate)
         utils.Message('Adjusted Rate to: {}%'.format(rate))
 

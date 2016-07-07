@@ -442,6 +442,14 @@ def getConfig():
         raise IOError('Configuration File "{}" does not exist!'.format(CONFIG))
     return munch.munchify(json.load(open(CONFIG, 'r'), 'utf-8'))
 
+def getRate(default=10.0):
+    conf = getConfig()
+    return float(conf.get('rate', default))
+
+def getMinAdminFee(default=27.50):
+    conf = getConfig()
+    return float(conf.get('admin_fee', default))
+
 def updateConfig(**kwargs):
     cd = getConfig()
     for k,v in kwargs.iteritems():

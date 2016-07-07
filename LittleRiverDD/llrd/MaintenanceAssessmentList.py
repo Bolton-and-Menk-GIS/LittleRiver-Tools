@@ -86,6 +86,7 @@ def generateMAL_AON(out_excel, county, rate=10.0, year=2015, where_clause='', so
             owner code and legal description (records are already sorted by
             section-township-range)
     """
+    rate = float(rate)
     if os.path.exists(out_excel):
         os.remove(out_excel)
 
@@ -182,7 +183,7 @@ def generateMAL_AON(out_excel, county, rate=10.0, year=2015, where_clause='', so
     #
     # recalculate admin fees if necessary
     #
-    if int(rate) != utils.getConfig().get('rate'):
+    if float(rate) != float(utils.getRate()):
         gdb.calculate_admin_fee(rate)
 
     # get sorted section-township-range
@@ -206,6 +207,9 @@ def generateMAL_AON(out_excel, county, rate=10.0, year=2015, where_clause='', so
             for r in rows:
 
                 vals = list(r)[:len(fields)]
+                for vi in (acre_ind, benefit_ind, assessment_ind):
+                    if vals[vi] is None:
+                        vals[vi] = 0
                 vals[headers.index(ASSESSMENT)] = Formula(ASSESSMENT_FORMULA.format(b='%s%s' %(ben_col, ws._currentRowIndex+1), r=(float(rate) * 0.01)))
                 vals.insert(admin_ind, Formula(ADMIN_FEE_FORMULA.format(a='%s%s' %(assess_col, ws._currentRowIndex+1))))
 
@@ -397,7 +401,10 @@ def generateMAL_TOP(out_excel, county, rate=10.0, year=2015, where_clause='', so
             for r in rows:
 
                 vals = list(r)[:len(fields)]
-                vals[headers.index(ASSESSMENT)] = Formula(ASSESSMENT_FORMULA.format(b='%s%s' %(ben_col, ws._currentRowIndex+1), r=(rate * 0.01)))
+                for vi in (acre_ind, benefit_ind, assessment_ind):
+                    if vals[vi] is None:
+                        vals[vi] = 0
+                vals[headers.index(ASSESSMENT)] = Formula(ASSESSMENT_FORMULA.format(b='%s%s' %(ben_col, ws._currentRowIndex+1), r=(float(rate) * 0.01)))
 
                 ws.addRow(*vals)
                 all_pins[r[-1]] = vals
@@ -437,7 +444,7 @@ def generateMAL_TOP(out_excel, county, rate=10.0, year=2015, where_clause='', so
     #
     # recalculate admin fees if necessary
     #
-    if int(rate) != utils.getConfig().get('rate'):
+    if float(rate) != float(utils.getRate()):
         gdb.calculate_admin_fee(rate)
         utils.Message('Adjusted Rate to: {}%'.format(rate))
 

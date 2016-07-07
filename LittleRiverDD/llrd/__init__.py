@@ -15,6 +15,7 @@ reload(utils)
 reload(OwnerReceipt)
 reload(AbstractOfReceipts)
 reload(MaintenanceAssessmentList)
+reload(MaintenanceAssessmentList_cs)
 reload(proxy)
 reload(flags)
 reload(download)
@@ -370,7 +371,7 @@ class MaintenanceAssessmentListTool_CS(object):
     def execute(self, parameters, messages):
         """The source code of the tool."""
         args = [p.valueAsText for p in parameters][:-1]
-        utils.passArgs(MaintenanceAssessmentList_cs.generateMAL, args)
+        utils.passArgs(MaintenanceAssessmentList_cs.generateMAL_cs, args)
 
 class ProxyTool(object):
     def __init__(self):

@@ -143,11 +143,6 @@ def generateAOR(out_excel, county, where_clause=None, sort_by=utils.OWNER_CODE):
     # alter initial where clause to include county
     where_clause = ' AND '.join(filter(None, ["{} = '{}'".format(COUNTY_FC, county.upper()), where_clause]))
 
-    # iterate through summary table and make sure all years have been populated
-    gdb = utils.Geodatabase()
-    with arcpy.da.SearchCursor(gdb.summary_table, [YEAR_FC], where_clause) as rows:
-        all_years = list(set(r[0] for r in rows))
-
 ##    all_years = []
 ##    with utils.UpdateCursor(gdb.summary_table, [YEAR_FC, DATE_PAID_FC], where_clause) as rows:
 ##        for r in rows:
@@ -161,10 +156,18 @@ def generateAOR(out_excel, county, where_clause=None, sort_by=utils.OWNER_CODE):
 ##
 ##            if r[0] not in all_years:
 ##                all_years.append(r[0])
+    utils.Message(sql)
+
+    # iterate through summary table and make sure all years have been populated
+    gdb = utils.Geodatabase()
+    with arcpy.da.SearchCursor(gdb.summary_table, [YEAR_FC], where_clause) as rows:
+        all_years = list(set(r[0] for r in rows))
+        utils.Message(all_years)
 
     # set up where clause
     for yr in sorted(all_years):
         where = ' AND '.join(filter(None, [where_clause, "{} = {}".format(YEAR_FC, yr)]))
+        utils.Message(where)
         cur_year_start = ws._currentRowIndex + 1
 
         # populate rows
@@ -201,7 +204,6 @@ def generateAOR(out_excel, county, where_clause=None, sort_by=utils.OWNER_CODE):
                                                                         ac=ascii_uppercase[amount_ind],
                                                                         pc=ascii_uppercase[penalty_ind],
                                                                         ec=ascii_uppercase[excess_ind]))
-
                 v.append(tot)
 
                 # add row

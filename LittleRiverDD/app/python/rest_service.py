@@ -247,6 +247,12 @@ def applyEdits():
                         #print f, value
                         if f not in ('OBJECTID', 'PIN'):
                             r[FIELD_INDEX_MAP[f]] = cast(f, value)
+                    if not 'YEAR' in vals and vals.get('DATE_PAID'):
+                        try:
+                            yr = cast('DATE_PAID', vals.get('DATE_PAID')).year - 1
+                        except:
+                            yr = None
+                        r[FIELD_INDEX_MAP['YEAR']] = yr
                     rows.updateRow(r)
 ##                elif r[oid_index] in deletes:
 ##                    rows.deleteRow()
@@ -259,6 +265,12 @@ def applyEdits():
             for f, value in atts.iteritems():
                 if f not in ('newRecord', 'OBJECTID'):
                     row[FIELD_INDEX_MAP[f]] = cast(f, value)
+            if not 'YEAR' in atts and atts.get('DATE_PAID'):
+                try:
+                    yr = cast('DATE_PAID', atts.get('DATE_PAID')).year - 1
+                except:
+                    yr = None
+                r[FIELD_INDEX_MAP['YEAR']] = yr
             irows.insertRow(row)
 
     status={'status': 'success',
