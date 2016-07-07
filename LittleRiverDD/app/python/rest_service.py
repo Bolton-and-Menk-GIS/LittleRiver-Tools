@@ -270,6 +270,7 @@ def applyEdits():
         }
 
     # rehydrate the cache of records
+    print status
     fetch_records()
     return jsonify(status)
 
