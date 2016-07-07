@@ -213,6 +213,8 @@ def ErrorLog(e, f, fargs=[]):
     cur = os.path.basename(sys.argv[0]).split('.')[0]
     er_time = '\n\n{0} failed at:\t{1}\n\n'.format(cur, datetime.datetime.now())
     log_dir = os.path.join(os.path.dirname(SOURCE_DIR), 'logs', 'errors')
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
     txt = assignUniqueName(os.path.join(log_dir, 'ERROR_{0}_{1}.txt'.format(cur, date)))
     if os.path.exists(txt):

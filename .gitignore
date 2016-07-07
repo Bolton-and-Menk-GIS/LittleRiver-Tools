@@ -1,6 +1,8 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[co]
-*_103.mxd
-*- Copy.*
+*.json
+*.txt
+!lr_fields.json
+!parcel_fields.json
 !auth.pyc
